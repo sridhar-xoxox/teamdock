@@ -1,0 +1,200 @@
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Types & Validation
+// ─────────────────────────────────────────────────────────────────────────────
+
+const ACTION_TYPES = [
+  "TASK_CREATED",
+  "TASK_UPDATED",
+  "TASK_DELETED",
+  "LIST_CREATED",
+  "LIST_UPDATED",
+  "LIST_DELETED",
+  "MEMBER_ADDED",
+  "MEMBER_REMOVED",
+] as const;
+
+type ActionType = (typeof ACTION_TYPES)[number];
+
+const auditLogSchema = z.object({
+  action_type: z.enum(ACTION_TYPES),
+  task_id: z.string().cuid2().optional().nullable(),
+  metadata: z.record(z.unknown()).optional().nullable(),
+});
+
+export interface AuditLogEntry {
+  id: string;
+  action_type: ActionType;
+  task_id: string | null;
+  user_id: string;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helper: create a Supabase server client
+// ─────────────────────────────────────────────────────────────────────────────
+
+function createSupabaseServerClient() {
+  const cookieStore = cookies();
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!, // service-role bypasses RLS for audit writes
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options)
+          );
+        },
+      },
+    }
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Core business logic (also exported for use in Server Actions)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * writeAuditLog
+ *
+ * Inserts a record into `audit_logs`. Safe to call from:
+ *   - Route Handlers (via POST /api/audit-log)
+ *   - Server Actions
+ *   - Middleware
+ */
+export async function writeAuditLog({
+  userId,
+  actionType,
+  taskId,
+  metadata,
+}: {
+  userId: string;
+  actionType: ActionType;
+  taskId?: string | null;
+  metadata?: Record<string, unknown> | null;
+}): Promise<AuditLogEntry> {
+  const supabase = createSupabaseServerClient();
+
+  const { data, error } = await supabase
+    .from("audit_logs")
+    .insert({
+      action_type: actionType,
+      user_id: userId,
+      task_id: taskId ?? null,
+      metadata: metadata ?? null,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to write audit log: ${error.message}`);
+  }
+
+  return data as AuditLogEntry;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Route Handler: POST /api/audit-log
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * POST /api/audit-log
+ *
+ * Body: { action_type, task_id?, metadata? }
+ *
+ * Auth: The authenticated user is derived from the session cookie —
+ * no userId needed in the body (prevents spoofing).
+ */
+export async function POST(req: NextRequest) {
+  try {
+    // ── 1. Authenticate ────────────────────────────────────────────────────
+    const supabase = createSupabaseServerClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // ── 2. Validate body ───────────────────────────────────────────────────
+    const body = await req.json();
+    const parsed = auditLogSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid request body", details: parsed.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { action_type, task_id, metadata } = parsed.data;
+
+    // ── 3. Write audit log ─────────────────────────────────────────────────
+    const entry = await writeAuditLog({
+      userId: user.id,
+      actionType: action_type,
+      taskId: task_id,
+      metadata: metadata as Record<string, unknown> | null,
+    });
+
+    return NextResponse.json({ data: entry }, { status: 201 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Internal server error";
+    console.error("[AuditLog API]", message);
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Route Handler: GET /api/audit-log?taskId=xxx&limit=50
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function GET(req: NextRequest) {
+  try {
+    const supabase = createSupabaseServerClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { searchParams } = req.nextUrl;
+    const taskId = searchParams.get("taskId");
+    const limit = Math.min(Number(searchParams.get("limit") ?? 50), 200);
+
+    let query = supabase
+      .from("audit_logs")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(limit);
+
+    if (taskId) {
+      query = query.eq("task_id", taskId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ data });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Internal server error";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
