@@ -9,12 +9,21 @@ export interface Workspace {
   name: string;
 }
 
+export interface TaskComment {
+  id: string;
+  taskId: string;
+  memberId: string;
+  text: string;
+  createdAt: string;
+}
+
 export interface Task {
   id: string; title: string; description?: string;
   priority: Priority; status: TaskStatus; isCompleted: boolean;
   dueDate?: string; assigneeId?: string; tags: string[];
   createdAt: string; updatedAt: string;
   workspaceId: string;
+  comments?: TaskComment[];
 }
 
 export interface Member {
@@ -56,6 +65,8 @@ interface Ctx {
   activeWorkspace: Workspace | undefined;
   getMemberByEmail: (email: string) => Member | undefined;
   getInviteByEmail: (email: string) => Invite | undefined;
+  updateMemberRole: (id: string, role: string) => void;
+  addTaskComment: (taskId: string, memberId: string, text: string) => void;
 }
 
 const StoreCtx = createContext<Ctx | null>(null);
@@ -218,6 +229,26 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const getMemberByEmail = (email: string) => allMembers.find(m => m.email === email);
   const getInviteByEmail = (email: string) => allInvites.find(i => i.email === email);
 
+  const updateMemberRole = (id: string, role: string) => {
+    setAllMembers(p => p.map(m => m.id === id ? { ...m, role } : m));
+    if (currentUser?.id === id) {
+      setCurrentUser(p => p ? { ...p, role } : null);
+    }
+    // Also update sessions
+    setSessions(p => p.map(s => s.id === id ? { ...s, role } : s));
+  };
+
+  const addTaskComment = (taskId: string, memberId: string, text: string) => {
+    const newComment: TaskComment = {
+      id: `c${Date.now()}`,
+      taskId,
+      memberId,
+      text,
+      createdAt: new Date().toISOString()
+    };
+    setAllTasks(p => p.map(t => t.id === taskId ? { ...t, comments: [...(t.comments || []), newComment] } : t));
+  };
+
   if (!mounted) {
     return null;
   }
@@ -230,10 +261,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       addInvite, removeInvite,
       addTask, updateTask, deleteTask, moveTask,
       theme, toggleTheme,
-      getMemberByEmail, getInviteByEmail
-    }}>
-      {children}
-    </StoreCtx.Provider>
+      getMemberByEmail, getInviteByEmail, updateMemberRole, addTaskComment
+    }}> {children} </StoreCtx.Provider>
   );
 }
 

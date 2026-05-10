@@ -18,15 +18,12 @@ export default function BoardPage() {
 
   const handleToggle = (id: string, newIsCompleted: boolean) => {
     if (newIsCompleted) {
-      // Mark as done and move to done list
       updateTask(id, { isCompleted: true, status: "DONE" });
     } else {
-      // If already done and clicked again, delete the task details
-      deleteTask(id);
+      updateTask(id, { isCompleted: false, status: "TODO" });
     }
   };
   
-
   const getAssignee = (id?: string) => members.find(m => m.id === id);
 
   return (

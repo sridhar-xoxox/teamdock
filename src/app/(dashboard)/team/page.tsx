@@ -73,21 +73,6 @@ export default function TeamPage() {
         )}
       </header>
 
-      {/* Stats Bar */}
-      <div className="mb-12 grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: "Active Nodes", value: members.length, color: "text-indigo-500" },
-          { label: "Pending Signals", value: invites.length, color: "text-amber-500" },
-          { label: "Avg. Velocity", value: "88%", color: "text-emerald-500" },
-          { label: "Roles Defined", value: uniqueRoles.length, color: "text-cyan-500" },
-        ].map((stat, idx) => (
-          <div key={idx} className="rounded-3xl border border-slate-200/60 dark:border-white/10 bg-white/50 dark:bg-white/[0.02] p-5 backdrop-blur-xl">
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{stat.label}</p>
-            <p className={cn("text-2xl font-black tracking-tight", stat.color)}>{stat.value}</p>
-          </div>
-        ))}
-      </div>
-
       {/* Search & Filter Bar */}
       <div className="mb-10 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative group flex-1 max-w-md">
