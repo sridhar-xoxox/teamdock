@@ -1,7 +1,7 @@
 "use client";
-import { CheckCircle, Star, Trash2 } from "lucide-react";
+import { CheckCircle, Star, Trash2, Clock, AlertCircle, PlayCircle, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Task, Member, Priority } from "@/lib/store";
+import { Task, Member, Priority, TaskStatus } from "@/lib/store";
 
 interface TaskListItemProps {
   task: Task;
@@ -11,6 +11,42 @@ interface TaskListItemProps {
   onSelect: (task: Task) => void;
   onPriorityChange: (id: string, priority: Priority) => void;
 }
+
+const statusConfig: Record<TaskStatus, { label: string, icon: any, classes: string }> = {
+  TODO: { 
+    label: "To Do", 
+    icon: Clock, 
+    classes: "bg-slate-100 text-slate-600 dark:bg-slate-500/10 dark:text-slate-400 border-slate-200 dark:border-slate-800" 
+  },
+  IN_PROGRESS: { 
+    label: "In Progress", 
+    icon: PlayCircle, 
+    classes: "bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400 border-indigo-100 dark:border-indigo-800" 
+  },
+  DONE: { 
+    label: "Completed", 
+    icon: CheckCircle2, 
+    classes: "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800" 
+  },
+};
+
+const priorityConfig: Record<Priority, { label: string, icon: any, classes: string }> = {
+  HIGH: { 
+    label: "High", 
+    icon: AlertCircle, 
+    classes: "bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400 border-rose-100 dark:border-rose-800" 
+  },
+  MEDIUM: { 
+    label: "Medium", 
+    icon: Star, 
+    classes: "bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400 border-amber-100 dark:border-amber-800" 
+  },
+  LOW: { 
+    label: "Low", 
+    icon: Star, 
+    classes: "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 border-blue-100 dark:border-blue-800" 
+  },
+};
 
 export function TaskListItem({
   task,
@@ -25,6 +61,9 @@ export function TaskListItem({
   const formattedDate = dateObj
     ? dateObj.toLocaleDateString("en-US", { month: "short", day: "numeric" })
     : "";
+
+  const status = statusConfig[task.status];
+  const priority = priorityConfig[task.priority];
 
   return (
     <div
@@ -78,6 +117,26 @@ export function TaskListItem({
       {/* Content Section */}
       <div className="min-w-0 flex-1 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-6 w-full sm:w-auto order-3 sm:order-none mt-2 sm:mt-0">
         <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-center gap-2 mb-1.5">
+            {/* Status Badge */}
+            <span className={cn(
+              "flex items-center gap-1 px-2 py-0.5 rounded-full border text-[9px] font-black uppercase tracking-wider transition-colors",
+              status.classes
+            )}>
+              <status.icon className="h-2.5 w-2.5" />
+              {status.label}
+            </span>
+
+            {/* Priority Badge */}
+            <span className={cn(
+              "flex items-center gap-1 px-2 py-0.5 rounded-full border text-[9px] font-black uppercase tracking-wider transition-colors",
+              priority.classes
+            )}>
+              <priority.icon className="h-2.5 w-2.5" />
+              {priority.label}
+            </span>
+          </div>
+
           <h3
             className={cn(
               "text-base sm:text-lg font-black tracking-tight truncate",

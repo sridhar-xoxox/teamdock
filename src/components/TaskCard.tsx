@@ -12,6 +12,7 @@ import {
   AlertCircle,
   Minus,
   ArrowDown,
+  Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -270,6 +271,28 @@ export function TaskCard({
         >
           <PriorityIcon className="h-2.5 w-2.5" />
           {label}
+        </span>
+
+        {/* Status Badge */}
+        <span
+          className={cn(
+            "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+            isCompleted 
+              ? "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/60"
+              : "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700"
+          )}
+        >
+          {isCompleted ? (
+            <>
+              <CheckCircle2 className="h-2.5 w-2.5" />
+              Done
+            </>
+          ) : (
+            <>
+              <Clock className="h-2.5 w-2.5" />
+              To Do
+            </>
+          )}
         </span>
 
         {/* Due Date */}
