@@ -30,17 +30,17 @@ export default function BoardPage() {
   const getAssignee = (id?: string) => members.find(m => m.id === id);
 
   return (
-    <div className="flex h-full flex-col p-8">
+    <div className="flex h-full flex-col p-4 sm:p-8">
       {/* Header */}
-      <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <header className="mb-6 sm:mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-1 font-medium">
-            <LayoutDashboard className="h-4 w-4" />
+          <div className="flex items-center gap-2 text-[10px] sm:text-sm text-slate-500 dark:text-slate-400 mb-1 font-black uppercase tracking-widest">
+            <LayoutDashboard className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             <span>Workspace</span>
             <ChevronDown className="h-3 w-3" />
-            <span className="text-indigo-600 dark:text-indigo-400 font-semibold">Kanban Board</span>
+            <span className="text-indigo-600 dark:text-indigo-400">Kanban Board</span>
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">Task Board</h1>
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tighter text-slate-900 dark:text-white">Task Board</h1>
         </div>
         <div className="flex w-full sm:w-auto items-center gap-4">
           <div className="relative flex-1 sm:flex-none">

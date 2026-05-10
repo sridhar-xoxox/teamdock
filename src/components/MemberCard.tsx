@@ -1,10 +1,10 @@
 "use client";
 import { Mail, Shield, MoreHorizontal } from "lucide-react";
-import { TeamMember, Task } from "@/lib/store";
+import { Member, Task } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
 interface MemberCardProps {
-  member: TeamMember;
+  member: Member;
   tasks: Task[];
   isCurrentUser: boolean;
 }

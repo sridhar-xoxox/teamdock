@@ -17,7 +17,7 @@ export interface Task {
   workspaceId: string;
 }
 
-export interface TeamMember {
+export interface Member {
   id: string; name: string; initials: string;
   email: string; role: string; color: string;
   workspaceId: string;
@@ -32,16 +32,16 @@ export interface Invite {
 interface Ctx {
   workspaces: Workspace[];
   tasks: Task[]; 
-  members: TeamMember[];
+  members: Member[];
   invites: Invite[];
-  sessions: TeamMember[];
-  currentUser: TeamMember | null;
-  setCurrentUser: (user: TeamMember | null) => void;
+  sessions: Member[];
+  currentUser: Member | null;
+  setCurrentUser: (user: Member | null) => void;
   switchSession: (id: string) => void;
   logoutSession: (id: string) => void;
   
-  createWorkspace: (name: string, adminMember: Omit<TeamMember, "workspaceId">) => void;
-  joinWorkspace: (invite: Invite, member: Omit<TeamMember, "workspaceId">) => void;
+  createWorkspace: (name: string, adminMember: Omit<Member, "workspaceId">) => void;
+  joinWorkspace: (invite: Invite, member: Omit<Member, "workspaceId">) => void;
   
   addInvite: (email: string, role: string) => void;
   removeInvite: (email: string) => void;
@@ -54,7 +54,7 @@ interface Ctx {
   toggleTheme: () => void;
   
   activeWorkspace: Workspace | undefined;
-  getMemberByEmail: (email: string) => TeamMember | undefined;
+  getMemberByEmail: (email: string) => Member | undefined;
   getInviteByEmail: (email: string) => Invite | undefined;
 }
 
@@ -64,11 +64,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 // ... existing state definitions ...
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [allTasks, setAllTasks] = useState<Task[]>([]);
-  const [allMembers, setAllMembers] = useState<TeamMember[]>([]);
+  const [allMembers, setAllMembers] = useState<Member[]>([]);
   const [allInvites, setAllInvites] = useState<Invite[]>([]);
   
-  const [sessions, setSessions] = useState<TeamMember[]>([]);
-  const [currentUser, setCurrentUser] = useState<TeamMember | null>(null);
+  const [sessions, setSessions] = useState<Member[]>([]);
+  const [currentUser, setCurrentUser] = useState<Member | null>(null);
   const [theme, setTheme] = useState<"light" | "dark">("dark");
   const [mounted, setMounted] = useState(false);
 
@@ -143,7 +143,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
   }, [workspaces, allTasks, allMembers, allInvites, sessions, currentUser, mounted]);
 
-  const handleSetCurrentUser = (user: TeamMember | null) => {
+  const handleSetCurrentUser = (user: Member | null) => {
     setCurrentUser(user);
     if (user) {
       setSessions(prev => {
@@ -168,7 +168,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const createWorkspace = (name: string, adminMember: Omit<TeamMember, "workspaceId">) => {
+  const createWorkspace = (name: string, adminMember: Omit<Member, "workspaceId">) => {
     const workspaceId = `ws_${Date.now()}`;
     setWorkspaces(p => [...p, { id: workspaceId, name }]);
     const newMember = { ...adminMember, workspaceId };
@@ -176,7 +176,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     handleSetCurrentUser(newMember);
   };
 
-  const joinWorkspace = (invite: Invite, member: Omit<TeamMember, "workspaceId">) => {
+  const joinWorkspace = (invite: Invite, member: Omit<Member, "workspaceId">) => {
     const newMember = { ...member, workspaceId: invite.workspaceId, role: invite.role };
     setAllMembers(p => [...p, newMember]);
     setAllInvites(p => p.filter(i => i.email !== invite.email));

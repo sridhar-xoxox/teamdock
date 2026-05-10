@@ -180,7 +180,7 @@ export function TaskListItem({
         )}
 
         {/* Date / Actions Toggle */}
-        <div className="w-auto sm:w-20 flex justify-end">
+        <div className="w-auto sm:w-20 flex justify-end items-center gap-2">
           <span
             className={cn(
               "text-[10px] sm:text-xs font-black tracking-tighter text-slate-400 sm:group-hover:hidden transition-all",
@@ -191,7 +191,7 @@ export function TaskListItem({
           >
             {formattedDate}
           </span>
-          <div className="hidden sm:group-hover:flex items-center gap-2">
+          <div className="flex sm:hidden sm:group-hover:flex items-center gap-2">
             <button
               onClick={(e) => {
                 e.stopPropagation();

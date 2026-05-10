@@ -102,16 +102,16 @@ export default function MyTasksPage() {
             placeholder="Search through tasks..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-2xl border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-white/[0.02] py-4 pl-12 pr-6 text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 backdrop-blur-md focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all"
+            className="w-full rounded-2xl border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-white/[0.02] py-4 pl-12 pr-6 text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 backdrop-blur-md focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all shadow-lg shadow-slate-200/20 dark:shadow-none"
           />
         </div>
-        <div className="flex flex-wrap items-center gap-2 p-1.5 rounded-2xl bg-slate-200/50 dark:bg-white/[0.03] backdrop-blur-md border border-slate-200/50 dark:border-white/5">
+        <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-slate-200/50 dark:bg-white/[0.03] backdrop-blur-md border border-slate-200/50 dark:border-white/5 overflow-x-auto custom-scrollbar no-scrollbar scroll-smooth">
           {(["ALL", "HIGH", "MEDIUM", "LOW", "DONE"] as const).map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
               className={cn(
-                "rounded-xl px-5 py-2 text-[10px] font-black uppercase tracking-widest transition-all duration-200",
+                "rounded-xl px-5 py-2 text-[10px] font-black uppercase tracking-widest transition-all duration-200 shrink-0",
                 filter === f
                   ? "bg-white dark:bg-white/10 text-indigo-600 dark:text-indigo-400 shadow-xl shadow-black/5"
                   : "text-slate-500 hover:text-slate-900 dark:hover:text-white"

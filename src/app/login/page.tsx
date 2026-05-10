@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Zap, Fingerprint, Facebook, Linkedin, ShieldCheck, Eye, EyeOff, Chrome, Apple } from "lucide-react";
 import { useStore } from "@/lib/store";
