@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { ArrowLeft, Trash2, CheckCircle, Clock, Star, MoreVertical, Sparkles, Send, MessageSquare, Archive, Reply, Forward, Printer, ExternalLink, User, Calendar } from "lucide-react";
+import { ArrowLeft, Trash2, CheckCircle, Clock, Star, MoreVertical, Sparkles, Send, MessageSquare, Archive, Reply, Forward, Printer, ExternalLink, User, Calendar, Paperclip, ImageIcon, Maximize2, X } from "lucide-react";
 import { useStore, Task } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
@@ -12,6 +12,7 @@ interface Props {
 export default function TaskDetailModal({ task: initialTask, onClose }: Props) {
   const { deleteTask, updateTask, members, currentUser, addTaskComment, tasks } = useStore();
   const [message, setMessage] = useState("");
+  const [activeImage, setActiveImage] = useState<string | null>(null);
   
   // Always get the latest task data from the store
   const task = tasks.find(t => t.id === initialTask.id) || initialTask;
@@ -23,10 +24,15 @@ export default function TaskDetailModal({ task: initialTask, onClose }: Props) {
   const isOverdue = dateObj && dateObj < new Date() && !task.isCompleted;
 
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const handler = (e: KeyboardEvent) => { 
+      if (e.key === "Escape") {
+        if (activeImage) setActiveImage(null);
+        else onClose();
+      }
+    };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [onClose]);
+  }, [onClose, activeImage]);
 
   const handleDelete = () => {
     deleteTask(task.id);
@@ -70,10 +76,6 @@ export default function TaskDetailModal({ task: initialTask, onClose }: Props) {
               <Clock className="h-5 w-5" />
             </button>
           </div>
-          <div className="flex items-center gap-1">
-            <button className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-full text-slate-500"><Printer className="h-4 w-4" /></button>
-            <button className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-full text-slate-500"><ExternalLink className="h-4 w-4" /></button>
-          </div>
         </div>
 
         {/* Scrollable Content */}
@@ -99,9 +101,9 @@ export default function TaskDetailModal({ task: initialTask, onClose }: Props) {
                 {task.dueDate && (
                   <div className="flex items-center gap-2 mb-6">
                     <div className={cn(
-                      "flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all animate-pulse",
+                      "flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all",
                       isOverdue 
-                        ? "bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-800" 
+                        ? "bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-800 animate-pulse" 
                         : "bg-indigo-50 text-indigo-600 border-indigo-200 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-800"
                     )}>
                       <Calendar className="h-4 w-4" />
@@ -153,6 +155,32 @@ export default function TaskDetailModal({ task: initialTask, onClose }: Props) {
             {task.description || 'No detailed instructions provided for this objective.'}
           </div>
 
+          {/* Visual Attachments Section - NO CROP PREVIEW */}
+          {task.attachments && task.attachments.length > 0 && (
+            <div className="px-24 py-8 border-t border-slate-100 dark:border-white/5">
+              <div className="flex items-center gap-2 mb-6 text-slate-500">
+                <Paperclip className="h-4 w-4" />
+                <span className="text-xs font-bold uppercase tracking-wider">Attachments ({task.attachments.length})</span>
+              </div>
+              <div className="flex flex-wrap gap-6">
+                {task.attachments.map((src, i) => (
+                  <div 
+                    key={i} 
+                    onClick={() => setActiveImage(src)}
+                    className="group relative rounded-2xl border-2 border-slate-200 dark:border-white/10 overflow-hidden bg-slate-50 dark:bg-white/5 p-2 w-48 h-48 cursor-pointer hover:border-indigo-500 transition-all shadow-sm"
+                  >
+                    <div className="w-full h-full flex items-center justify-center overflow-hidden rounded-lg">
+                      <img src={src} alt="" className="max-w-full max-h-full object-contain transition-transform group-hover:scale-110" />
+                    </div>
+                    <div className="absolute inset-0 bg-indigo-600/10 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                      <Maximize2 className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Email Thread / Update Board */}
           <div className="px-24 py-8 border-t border-slate-100 dark:border-white/5">
             <div className="flex items-center gap-2 mb-8 text-slate-500">
@@ -193,9 +221,6 @@ export default function TaskDetailModal({ task: initialTask, onClose }: Props) {
                 >
                   <Reply className="h-4 w-4" /> Reply
                 </button>
-                <button className="flex items-center gap-2 px-6 py-2 border border-slate-300 dark:border-slate-700 rounded-full text-sm font-medium text-slate-500 hover:bg-slate-50 dark:hover:bg-white/5 transition-all">
-                  <Forward className="h-4 w-4" /> Forward
-                </button>
               </div>
             )}
             
@@ -229,6 +254,28 @@ export default function TaskDetailModal({ task: initialTask, onClose }: Props) {
         </div>
 
       </div>
+
+      {/* LIGHTBOX MODAL - NO CROP */}
+      {activeImage && (
+        <div 
+          className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-md flex flex-col items-center justify-center p-4 sm:p-12 animate-in fade-in duration-300"
+          onClick={() => setActiveImage(null)}
+        >
+          <button 
+            onClick={() => setActiveImage(null)}
+            className="absolute top-8 right-8 p-3 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all z-[210]"
+          >
+            <X className="h-6 w-6" />
+          </button>
+          <div className="relative w-full h-full flex items-center justify-center overflow-hidden p-4 sm:p-8">
+            <img 
+              src={activeImage} 
+              alt="Full size attachment" 
+              className="max-w-full max-h-full object-contain shadow-[0_0_50px_rgba(0,0,0,0.8)] rounded-lg animate-in zoom-in-95 duration-300"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

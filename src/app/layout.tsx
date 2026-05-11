@@ -10,8 +10,24 @@ export const metadata: Metadata = {
 export const viewport: Viewport = { themeColor: "#6366f1" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const themeScript = `
+    (function() {
+      try {
+        var theme = localStorage.getItem('qt_theme');
+        var supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+        if (!theme && supportDarkMode) theme = 'dark';
+        if (!theme) theme = 'light';
+        document.documentElement.classList.add(theme);
+        document.documentElement.style.colorScheme = theme;
+      } catch (e) {}
+    })();
+  `;
+
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body>
         <StoreProvider>{children}</StoreProvider>
       </body>

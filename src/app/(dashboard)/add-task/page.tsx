@@ -1,7 +1,7 @@
 "use client";
-import { useState, KeyboardEvent } from "react";
+import { useState, KeyboardEvent, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Tag, Calendar, User, Flag, Layers, Send } from "lucide-react";
+import { ArrowLeft, Tag, Calendar, User, Flag, Layers, Send, Image as ImageIcon, X, UploadCloud, FileText } from "lucide-react";
 import { useStore, Priority, TaskStatus } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
@@ -26,7 +26,9 @@ export default function AddTaskPage() {
   const [assigneeId, setAssignee] = useState("");
   const [tagInput, setTagInput]   = useState("");
   const [tags, setTags]           = useState<string[]>([]);
+  const [attachments, setAttachments] = useState<string[]>([]);
   const [error, setError]         = useState("");
+  const [isDragging, setIsDragging] = useState(false);
 
   const addTag = () => {
     const t = tagInput.trim().toLowerCase();
@@ -35,6 +37,38 @@ export default function AddTaskPage() {
   };
   const onTagKey = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" || e.key === ",") { e.preventDefault(); addTag(); }
+  };
+
+  const handleFileUpload = (files: FileList | null) => {
+    if (!files) return;
+    Array.from(files).forEach(file => {
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setAttachments(prev => [...prev, reader.result as string]);
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  };
+
+  const onDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const onDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    handleFileUpload(e.dataTransfer.files);
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = () => {
@@ -47,9 +81,10 @@ export default function AddTaskPage() {
       isCompleted: status === "DONE", 
       dueDate: dueDate || undefined,
       assigneeId: assigneeId || undefined, 
-      tags 
+      tags,
+      attachments
     });
-    router.push("/my-tasks"); // Redirect back to task list like an email inbox
+    router.push("/my-tasks");
   };
 
   return (
@@ -63,7 +98,7 @@ export default function AddTaskPage() {
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">Compose Task</h1>
+            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">Compose Task</h1>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 font-medium">Create a new task for your workspace</p>
           </div>
         </div>
@@ -84,7 +119,7 @@ export default function AddTaskPage() {
             autoFocus
             value={title} onChange={e => { setTitle(e.target.value); setError(""); }}
             placeholder="Task Title..."
-            className="w-full bg-transparent text-3xl font-extrabold text-slate-900 dark:text-slate-100 placeholder-slate-300 dark:placeholder-slate-600 focus:outline-none"
+            className="w-full bg-transparent text-3xl font-extrabold text-slate-900 dark:text-white placeholder-slate-300 dark:placeholder-slate-600 focus:outline-none"
           />
           {error && <p className="mt-2 text-xs text-red-500 font-semibold">{error}</p>}
         </div>
@@ -102,8 +137,61 @@ export default function AddTaskPage() {
           />
         </div>
 
+        {/* Attachments & Drag-Drop */}
+        <div className="pt-4 border-t border-slate-200 dark:border-white/10">
+          <label className="mb-4 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            <ImageIcon className="h-4 w-4" /> Visual Attachments
+          </label>
+          
+          <div 
+            onDragOver={onDragOver}
+            onDragLeave={onDragLeave}
+            onDrop={onDrop}
+            className={cn(
+              "relative flex flex-col items-center justify-center rounded-[2rem] border-2 border-dashed p-8 transition-all duration-300",
+              isDragging 
+                ? "border-indigo-500 bg-indigo-500/10 scale-[0.99]" 
+                : "border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5"
+            )}
+          >
+            <input 
+              type="file" 
+              multiple 
+              accept="image/*"
+              onChange={(e) => handleFileUpload(e.target.files)}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            />
+            <div className="flex flex-col items-center gap-3 text-center">
+              <div className="h-16 w-16 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-500">
+                <UploadCloud className="h-8 w-8" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-slate-900 dark:text-white">Drop images here or click to browse</p>
+                <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-widest font-black">PNG, JPG, WEBP • Max 5MB</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Attachment Previews */}
+          {attachments.length > 0 && (
+            <div className="flex flex-wrap gap-4 mt-6">
+              {attachments.map((src, i) => (
+                <div key={i} className="group relative h-24 w-24 rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5">
+                  <img src={src} alt="" className="h-full w-full object-cover" />
+                  <button 
+                    onClick={() => removeAttachment(i)}
+                    className="absolute top-1 right-1 h-6 w-6 rounded-full bg-rose-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Properties Grid */}
-        <div className="grid gap-6 sm:grid-cols-2 pt-4">
+        <div className="grid gap-6 sm:grid-cols-2 pt-6 border-t border-slate-200 dark:border-white/10">
           {/* Status */}
           <div>
             <label className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
@@ -144,7 +232,7 @@ export default function AddTaskPage() {
               <Calendar className="h-4 w-4" /> Due Date
             </label>
             <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-black/20 px-4 py-3 text-sm text-slate-900 dark:text-slate-100 focus:border-indigo-500/60 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 [color-scheme:light] dark:[color-scheme:dark]"
+              className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-black/20 px-4 py-3 text-sm text-slate-900 dark:text-white focus:border-indigo-500/60 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 [color-scheme:light] dark:[color-scheme:dark]"
             />
           </div>
 
@@ -154,7 +242,7 @@ export default function AddTaskPage() {
               <User className="h-4 w-4" /> Assignee
             </label>
             <select value={assigneeId} onChange={e => setAssignee(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-black/20 px-4 py-3 text-sm text-slate-900 dark:text-slate-100 focus:border-indigo-500/60 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 appearance-none cursor-pointer">
+              className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-black/20 px-4 py-3 text-sm text-slate-900 dark:text-white focus:border-indigo-500/60 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 appearance-none cursor-pointer">
               <option value="" className="bg-white dark:bg-slate-900">Unassigned</option>
               {members.map(m => <option key={m.id} value={m.id} className="bg-white dark:bg-slate-900">{m.name}</option>)}
             </select>
@@ -162,7 +250,7 @@ export default function AddTaskPage() {
         </div>
 
         {/* Tags */}
-        <div className="pt-4 border-t border-slate-200 dark:border-white/10">
+        <div className="pt-6 border-t border-slate-200 dark:border-white/10">
           <label className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
             <Tag className="h-4 w-4" /> Tags
           </label>
@@ -176,7 +264,7 @@ export default function AddTaskPage() {
           </div>
           <input value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={onTagKey} onBlur={addTag}
             placeholder="Type a tag and press Enter..."
-            className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-black/20 px-4 py-3 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:border-indigo-500/60 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+            className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-black/20 px-4 py-3 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:border-indigo-500/60 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
           />
         </div>
       </div>

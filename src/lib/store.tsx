@@ -24,6 +24,7 @@ export interface Task {
   createdAt: string; updatedAt: string;
   workspaceId: string;
   comments?: TaskComment[];
+  attachments?: string[]; // Array of base64 or URLs
 }
 
 export interface Member {
@@ -72,7 +73,6 @@ interface Ctx {
 const StoreCtx = createContext<Ctx | null>(null);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-// ... existing state definitions ...
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [allTasks, setAllTasks] = useState<Task[]>([]);
   const [allMembers, setAllMembers] = useState<Member[]>([]);
@@ -80,9 +80,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   
   const [sessions, setSessions] = useState<Member[]>([]);
   const [currentUser, setCurrentUser] = useState<Member | null>(null);
-  const [theme, setTheme] = useState<"light" | "dark">("dark");
+  const [theme, setTheme] = useState<"light" | "dark">("dark"); // Default, will be updated by useEffect
   const [mounted, setMounted] = useState(false);
 
+  // Initialize from LocalStorage
   useEffect(() => {
     try {
       const w = localStorage.getItem("qt_workspaces");
@@ -103,54 +104,63 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const u = localStorage.getItem("qt_user");
       if (u) setCurrentUser(JSON.parse(u));
 
-      const t = localStorage.getItem("qt_theme") as "light" | "dark";
-      if (t) {
-        setTheme(t);
+      // THEME INITIALIZATION
+      const savedTheme = localStorage.getItem("qt_theme") as "light" | "dark" | null;
+      if (savedTheme === "light" || savedTheme === "dark") {
+        setTheme(savedTheme);
       } else {
-        // Default to system theme if no preference is saved
-        const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-        setTheme(systemTheme);
+        // Fallback to system theme if no user preference
+        const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        setTheme(isDark ? "dark" : "light");
       }
-    } catch {}
+    } catch (e) {
+      console.error("Storage Error", e);
+    }
     setMounted(true);
   }, []);
 
+  // System Theme Listener
   useEffect(() => {
     if (!mounted) return;
 
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     const handleSystemThemeChange = (e: MediaQueryListEvent) => {
-      // Automatically update theme when system preference changes
-      setTheme(e.matches ? "dark" : "light");
+      // ONLY update if the user hasn't set a manual preference
+      // For this app, we'll follow system if user preference is cleared,
+      // but let's assume they want "auto" by default if they haven't toggled.
+      const userPref = localStorage.getItem("qt_theme");
+      if (!userPref) {
+        setTheme(e.matches ? "dark" : "light");
+      }
     };
 
     mediaQuery.addEventListener("change", handleSystemThemeChange);
     return () => mediaQuery.removeEventListener("change", handleSystemThemeChange);
   }, [mounted]);
 
+  // Apply Theme to DOM
   useEffect(() => {
-    if (mounted) {
-      if (theme === "dark") {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
-      localStorage.setItem("qt_theme", theme);
+    if (!mounted) return;
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
     }
+    localStorage.setItem("qt_theme", theme);
   }, [theme, mounted]);
 
+  // Sync state to LocalStorage
   useEffect(() => {
-    if (mounted) {
-      localStorage.setItem("qt_workspaces", JSON.stringify(workspaces));
-      localStorage.setItem("qt_tasks", JSON.stringify(allTasks));
-      localStorage.setItem("qt_members", JSON.stringify(allMembers));
-      localStorage.setItem("qt_invites", JSON.stringify(allInvites));
-      localStorage.setItem("qt_sessions", JSON.stringify(sessions));
-      if (currentUser) {
-        localStorage.setItem("qt_user", JSON.stringify(currentUser));
-      } else {
-        localStorage.removeItem("qt_user");
-      }
+    if (!mounted) return;
+    localStorage.setItem("qt_workspaces", JSON.stringify(workspaces));
+    localStorage.setItem("qt_tasks", JSON.stringify(allTasks));
+    localStorage.setItem("qt_members", JSON.stringify(allMembers));
+    localStorage.setItem("qt_invites", JSON.stringify(allInvites));
+    localStorage.setItem("qt_sessions", JSON.stringify(sessions));
+    if (currentUser) {
+      localStorage.setItem("qt_user", JSON.stringify(currentUser));
+    } else {
+      localStorage.removeItem("qt_user");
     }
   }, [workspaces, allTasks, allMembers, allInvites, sessions, currentUser, mounted]);
 
@@ -234,7 +244,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (currentUser?.id === id) {
       setCurrentUser(p => p ? { ...p, role } : null);
     }
-    // Also update sessions
     setSessions(p => p.map(s => s.id === id ? { ...s, role } : s));
   };
 
@@ -248,10 +257,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     };
     setAllTasks(p => p.map(t => t.id === taskId ? { ...t, comments: [...(t.comments || []), newComment] } : t));
   };
-
-  if (!mounted) {
-    return null;
-  }
 
   return (
     <StoreCtx.Provider value={{ 

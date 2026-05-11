@@ -122,7 +122,7 @@ export default function SettingsPage() {
               <div className="space-y-8">
                 <div>
                   <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6">Profile Information</h3>
-                  <div className="flex items-center gap-6 mb-8">
+                  <div className="flex items-center gap-6">
                     <div 
                       className="h-20 w-20 rounded-full flex items-center justify-center text-2xl font-bold text-white shadow-xl"
                       style={{ backgroundColor: currentUser?.color || "#6366f1" }}
@@ -137,30 +137,6 @@ export default function SettingsPage() {
                       </span>
                     </div>
                   </div>
-                  
-                  <div className="grid gap-6">
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold uppercase tracking-widest text-slate-500">Full Name</label>
-                      <input 
-                        type="text" 
-                        defaultValue={currentUser?.name}
-                        className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold uppercase tracking-widest text-slate-500">Email Address</label>
-                      <input 
-                        type="email" 
-                        defaultValue={currentUser?.email}
-                        className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className="pt-4 border-t border-slate-200 dark:border-white/10">
-                  <button className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-8 rounded-xl text-sm transition-all shadow-lg shadow-indigo-500/25 flex items-center gap-2">
-                    <Save className="h-4 w-4" /> Save Changes
-                  </button>
                 </div>
               </div>
             )}

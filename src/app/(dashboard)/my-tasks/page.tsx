@@ -50,17 +50,13 @@ export default function MyTasksPage() {
             className="w-full bg-slate-100/50 dark:bg-white/5 border-transparent focus:bg-white dark:focus:bg-white/10 focus:shadow-md border rounded-lg py-2.5 pl-12 pr-4 text-sm transition-all outline-none"
           />
         </div>
-        <div className="flex items-center gap-2">
-          <button className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-full text-slate-500"><Settings className="h-5 w-5" /></button>
-          <div className="h-8 w-8 rounded-full bg-indigo-600 flex items-center justify-center text-xs font-bold text-white">U</div>
-        </div>
+        {/* REMOVED SETTINGS ICON AND USER AVATAR AS REQUESTED */}
       </div>
 
       {/* Gmail-style Action Bar - Glassmorphic */}
       <div className="flex items-center justify-between px-4 py-1.5 border-b border-slate-200/50 dark:border-white/5 bg-white/40 dark:bg-white/[0.02] backdrop-blur-md shrink-0">
         <div className="flex items-center gap-1">
-          <div className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-full text-slate-500 cursor-pointer"><RefreshCw className="h-4 w-4" /></div>
-          <div className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-full text-slate-500 cursor-pointer"><MoreVertical className="h-4 w-4" /></div>
+          <div className="h-8" /> 
         </div>
         <div className="flex items-center gap-4 text-[11px] text-slate-500 font-medium">
           <span>1-{filtered.length} of {filtered.length}</span>
