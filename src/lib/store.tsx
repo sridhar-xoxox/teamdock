@@ -1,5 +1,8 @@
 "use client";
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { authService } from "@/services/auth.service";
+import { taskService } from "@/services/task.service";
+import { workspaceService } from "@/services/workspace.service";
 
 export type Priority = "HIGH" | "MEDIUM" | "LOW";
 export type TaskStatus = "TODO" | "IN_PROGRESS" | "DONE";
@@ -24,7 +27,7 @@ export interface Task {
   createdAt: string; updatedAt: string;
   workspaceId: string;
   comments?: TaskComment[];
-  attachments?: string[]; // Array of base64 or URLs
+  attachments?: string[];
 }
 
 export interface Member {
@@ -44,229 +47,174 @@ interface Ctx {
   tasks: Task[]; 
   members: Member[];
   invites: Invite[];
-  sessions: Member[];
   currentUser: Member | null;
-  setCurrentUser: (user: Member | null) => void;
-  switchSession: (id: string) => void;
-  logoutSession: (id: string) => void;
+  loading: boolean;
   
-  createWorkspace: (name: string, adminMember: Omit<Member, "workspaceId">) => void;
-  joinWorkspace: (invite: Invite, member: Omit<Member, "workspaceId">) => void;
-  
-  addInvite: (email: string, role: string) => void;
-  removeInvite: (email: string) => void;
-  addTask: (t: Omit<Task,"id"|"createdAt"|"updatedAt"|"workspaceId">) => void;
-  updateTask: (id: string, u: Partial<Task>) => void;
-  deleteTask: (id: string) => void;
-  moveTask: (id: string, s: TaskStatus) => void;
+  createWorkspace: (name: string) => Promise<void>;
+  addTask: (t: Omit<Task,"id"|"createdAt"|"updatedAt"|"workspaceId">) => Promise<void>;
+  updateTask: (id: string, u: Partial<Task>) => Promise<void>;
+  deleteTask: (id: string) => Promise<void>;
+  moveTask: (id: string, s: TaskStatus) => Promise<void>;
   
   theme: "light" | "dark";
   toggleTheme: () => void;
   
   activeWorkspace: Workspace | undefined;
-  getMemberByEmail: (email: string) => Member | undefined;
-  getInviteByEmail: (email: string) => Invite | undefined;
-  updateMemberRole: (id: string, role: string) => void;
-  addTaskComment: (taskId: string, memberId: string, text: string) => void;
+  updateMemberRole: (id: string, role: string) => Promise<void>;
+  addTaskComment: (taskId: string, text: string) => Promise<void>;
+  signOut: () => Promise<void>;
 }
 
 const StoreCtx = createContext<Ctx | null>(null);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
-  const [allTasks, setAllTasks] = useState<Task[]>([]);
-  const [allMembers, setAllMembers] = useState<Member[]>([]);
-  const [allInvites, setAllInvites] = useState<Invite[]>([]);
-  
-  const [sessions, setSessions] = useState<Member[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [invites, setInvites] = useState<Invite[]>([]);
   const [currentUser, setCurrentUser] = useState<Member | null>(null);
-  const [theme, setTheme] = useState<"light" | "dark">("dark"); // Default, will be updated by useEffect
+  const [loading, setLoading] = useState(true);
+  const [theme, setTheme] = useState<"light" | "dark">("dark");
   const [mounted, setMounted] = useState(false);
 
-  // Initialize from LocalStorage
+  // 1. Initial Load & Auth Check
   useEffect(() => {
-    try {
-      const w = localStorage.getItem("qt_workspaces");
-      if (w) setWorkspaces(JSON.parse(w));
+    const init = async () => {
+      try {
+        // Theme
+        const savedTheme = localStorage.getItem("qt_theme") as "light" | "dark" | null;
+        if (savedTheme) setTheme(savedTheme);
+        else if (window.matchMedia("(prefers-color-scheme: dark)").matches) setTheme("dark");
 
-      const s = localStorage.getItem("qt_tasks");
-      if (s) setAllTasks(JSON.parse(s));
-      
-      const m = localStorage.getItem("qt_members");
-      if (m) setAllMembers(JSON.parse(m));
-      
-      const i = localStorage.getItem("qt_invites");
-      if (i) setAllInvites(JSON.parse(i));
+        // User Session
+        const user = await authService.getCurrentUser();
+        if (user) {
+          const profile = await authService.getProfile(user.id);
+          const userWorkspaces = await workspaceService.getWorkspaces(user.id);
+          setWorkspaces(userWorkspaces as any);
 
-      const sess = localStorage.getItem("qt_sessions");
-      if (sess) setSessions(JSON.parse(sess));
+          if (userWorkspaces.length > 0) {
+            const activeWs = userWorkspaces[0];
+            const wsMembers = await workspaceService.getMembers(activeWs.id);
+            const wsTasks = await taskService.getTasks(activeWs.id);
+            
+            setTasks(wsTasks as any);
+            setMembers(wsMembers.map(m => ({
+              id: m.user_id,
+              name: m.profile.full_name,
+              email: m.profile.email,
+              initials: m.profile.full_name?.split(' ').map((n:any) => n[0]).join('') || 'U',
+              role: m.role,
+              color: '#6366f1',
+              workspaceId: m.workspace_id
+            })) as any);
 
-      const u = localStorage.getItem("qt_user");
-      if (u) setCurrentUser(JSON.parse(u));
-
-      // THEME INITIALIZATION
-      const savedTheme = localStorage.getItem("qt_theme") as "light" | "dark" | null;
-      if (savedTheme === "light" || savedTheme === "dark") {
-        setTheme(savedTheme);
-      } else {
-        // Fallback to system theme if no user preference
-        const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-        setTheme(isDark ? "dark" : "light");
-      }
-    } catch (e) {
-      console.error("Storage Error", e);
-    }
-    setMounted(true);
-  }, []);
-
-  // System Theme Listener
-  useEffect(() => {
-    if (!mounted) return;
-
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    const handleSystemThemeChange = (e: MediaQueryListEvent) => {
-      // ONLY update if the user hasn't set a manual preference
-      // For this app, we'll follow system if user preference is cleared,
-      // but let's assume they want "auto" by default if they haven't toggled.
-      const userPref = localStorage.getItem("qt_theme");
-      if (!userPref) {
-        setTheme(e.matches ? "dark" : "light");
+            const currentMember = wsMembers.find(m => m.user_id === user.id);
+            if (currentMember) {
+              setCurrentUser({
+                id: user.id,
+                name: profile.full_name,
+                email: profile.email,
+                initials: profile.full_name?.split(' ').map((n:any) => n[0]).join('') || 'U',
+                role: currentMember.role,
+                color: '#6366f1',
+                workspaceId: activeWs.id
+              });
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Init Error", err);
+      } finally {
+        setLoading(false);
+        setMounted(true);
       }
     };
+    init();
+  }, []);
 
-    mediaQuery.addEventListener("change", handleSystemThemeChange);
-    return () => mediaQuery.removeEventListener("change", handleSystemThemeChange);
-  }, [mounted]);
+  // 2. Real-time Subscriptions
+  useEffect(() => {
+    if (!currentUser?.workspaceId) return;
 
-  // Apply Theme to DOM
+    let taskSub: any;
+    const setupRealtime = async () => {
+      taskSub = await taskService.subscribeToTasks(currentUser.workspaceId, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          setTasks(prev => [payload.new as any, ...prev]);
+        } else if (payload.eventType === 'UPDATE') {
+          setTasks(prev => prev.map(t => t.id === payload.new.id ? { ...t, ...payload.new } : t));
+        } else if (payload.eventType === 'DELETE') {
+          setTasks(prev => prev.filter(t => t.id !== payload.old.id));
+        }
+      });
+    };
+
+    setupRealtime();
+    return () => { if (taskSub) taskSub.unsubscribe(); };
+  }, [currentUser?.workspaceId]);
+
+  // 3. Theme Application
   useEffect(() => {
     if (!mounted) return;
-    if (theme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
+    if (theme === "dark") document.documentElement.classList.add("dark");
+    else document.documentElement.classList.remove("dark");
     localStorage.setItem("qt_theme", theme);
   }, [theme, mounted]);
 
-  // Sync state to LocalStorage
-  useEffect(() => {
-    if (!mounted) return;
-    localStorage.setItem("qt_workspaces", JSON.stringify(workspaces));
-    localStorage.setItem("qt_tasks", JSON.stringify(allTasks));
-    localStorage.setItem("qt_members", JSON.stringify(allMembers));
-    localStorage.setItem("qt_invites", JSON.stringify(allInvites));
-    localStorage.setItem("qt_sessions", JSON.stringify(sessions));
-    if (currentUser) {
-      localStorage.setItem("qt_user", JSON.stringify(currentUser));
-    } else {
-      localStorage.removeItem("qt_user");
-    }
-  }, [workspaces, allTasks, allMembers, allInvites, sessions, currentUser, mounted]);
-
-  const handleSetCurrentUser = (user: Member | null) => {
-    setCurrentUser(user);
-    if (user) {
-      setSessions(prev => {
-        if (!prev.find(s => s.id === user.id)) {
-          return [...prev, user];
-        }
-        return prev;
-      });
-    }
-  };
-
-  const switchSession = (id: string) => {
-    const user = sessions.find(s => s.id === id);
-    if (user) setCurrentUser(user);
-  };
-
-  const logoutSession = (id: string) => {
-    const newSessions = sessions.filter(s => s.id !== id);
-    setSessions(newSessions);
-    if (currentUser?.id === id) {
-      setCurrentUser(newSessions.length > 0 ? newSessions[0] : null);
-    }
-  };
-
-  const createWorkspace = (name: string, adminMember: Omit<Member, "workspaceId">) => {
-    const workspaceId = `ws_${Date.now()}`;
-    setWorkspaces(p => [...p, { id: workspaceId, name }]);
-    const newMember = { ...adminMember, workspaceId };
-    setAllMembers(p => [...p, newMember]);
-    handleSetCurrentUser(newMember);
-  };
-
-  const joinWorkspace = (invite: Invite, member: Omit<Member, "workspaceId">) => {
-    const newMember = { ...member, workspaceId: invite.workspaceId, role: invite.role };
-    setAllMembers(p => [...p, newMember]);
-    setAllInvites(p => p.filter(i => i.email !== invite.email));
-    handleSetCurrentUser(newMember);
-  };
-
-  const currentWorkspaceId = currentUser?.workspaceId;
-  const activeWorkspace = workspaces.find(w => w.id === currentWorkspaceId);
-
-  const tasks = allTasks.filter(t => t.workspaceId === currentWorkspaceId);
-  const members = allMembers.filter(m => m.workspaceId === currentWorkspaceId);
-  const invites = allInvites.filter(i => i.workspaceId === currentWorkspaceId);
-
-  const addInvite = (email: string, role: string) => {
-    if (!currentWorkspaceId) return;
-    setAllInvites(p => [...p, { email, role, workspaceId: currentWorkspaceId }]);
-  };
-  
-  const removeInvite = (email: string) => {
-    if (!currentWorkspaceId) return;
-    setAllInvites(p => p.filter(i => !(i.email === email && i.workspaceId === currentWorkspaceId)));
-  };
-
-  const addTask = (t: Omit<Task,"id"|"createdAt"|"updatedAt"|"workspaceId">) => {
-    if (!currentWorkspaceId) return;
-    setAllTasks(p => [{ ...t, id:`t${Date.now()}`, workspaceId: currentWorkspaceId, createdAt:new Date().toISOString(), updatedAt:new Date().toISOString() }, ...p]);
-  };
-
-  const updateTask = (id: string, u: Partial<Task>) =>
-    setAllTasks(p => p.map(t => t.id===id ? { ...t, ...u, updatedAt:new Date().toISOString() } : t));
-
-  const deleteTask = (id: string) => setAllTasks(p => p.filter(t => t.id !== id));
-
-  const moveTask = (id: string, s: TaskStatus) =>
-    setAllTasks(p => p.map(t => t.id===id ? { ...t, status:s, isCompleted:s==="DONE", updatedAt:new Date().toISOString() } : t));
-
   const toggleTheme = () => setTheme(t => t === "light" ? "dark" : "light");
 
-  const getMemberByEmail = (email: string) => allMembers.find(m => m.email === email);
-  const getInviteByEmail = (email: string) => allInvites.find(i => i.email === email);
+  const activeWorkspace = workspaces[0]; // For now, handle single workspace
 
-  const updateMemberRole = (id: string, role: string) => {
-    setAllMembers(p => p.map(m => m.id === id ? { ...m, role } : m));
-    if (currentUser?.id === id) {
-      setCurrentUser(p => p ? { ...p, role } : null);
-    }
-    setSessions(p => p.map(s => s.id === id ? { ...s, role } : s));
+  const createWorkspace = async (name: string) => {
+    if (!currentUser) return;
+    const ws = await workspaceService.createWorkspace(name, currentUser.id);
+    setWorkspaces([ws as any]);
   };
 
-  const addTaskComment = (taskId: string, memberId: string, text: string) => {
-    const newComment: TaskComment = {
-      id: `c${Date.now()}`,
-      taskId,
-      memberId,
-      text,
-      createdAt: new Date().toISOString()
-    };
-    setAllTasks(p => p.map(t => t.id === taskId ? { ...t, comments: [...(t.comments || []), newComment] } : t));
+  const addTask = async (t: any) => {
+    if (!currentUser?.workspaceId) return;
+    await taskService.addTask({
+      ...t,
+      workspace_id: currentUser.workspaceId,
+      created_by: currentUser.id
+    });
+  };
+
+  const updateTask = async (id: string, u: Partial<Task>) => {
+    await taskService.updateTask(id, u as any);
+  };
+
+  const deleteTask = async (id: string) => {
+    await taskService.deleteTask(id);
+  };
+
+  const moveTask = async (id: string, s: TaskStatus) => {
+    await taskService.updateTask(id, { status: s, isCompleted: s === "DONE" } as any);
+  };
+
+  const updateMemberRole = async (id: string, role: string) => {
+    // Implement in workspaceService later
+  };
+
+  const addTaskComment = async (taskId: string, text: string) => {
+    // Implement in taskService later
+  };
+
+  const signOut = async () => {
+    await authService.signOut();
+    window.location.href = "/login";
   };
 
   return (
     <StoreCtx.Provider value={{ 
-      workspaces, tasks, members, invites, sessions, currentUser, setCurrentUser: handleSetCurrentUser, 
-      switchSession, logoutSession, activeWorkspace,
-      createWorkspace, joinWorkspace,
-      addInvite, removeInvite,
+      workspaces, tasks, members, invites, currentUser, loading,
+      activeWorkspace,
+      createWorkspace,
       addTask, updateTask, deleteTask, moveTask,
       theme, toggleTheme,
-      getMemberByEmail, getInviteByEmail, updateMemberRole, addTaskComment
+      updateMemberRole, addTaskComment,
+      signOut
     }}> {children} </StoreCtx.Provider>
   );
 }
