@@ -1,8 +1,5 @@
 "use client";
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { authService } from "@/services/auth.service";
-import { taskService } from "@/services/task.service";
-import { workspaceService } from "@/services/workspace.service";
 
 export type Priority = "HIGH" | "MEDIUM" | "LOW";
 export type TaskStatus = "TODO" | "IN_PROGRESS" | "DONE";
@@ -63,98 +60,86 @@ interface Ctx {
   updateMemberRole: (id: string, role: string) => Promise<void>;
   addTaskComment: (taskId: string, text: string) => Promise<void>;
   signOut: () => Promise<void>;
+  
+  getInviteByEmail: (email: string) => Invite | undefined;
+  getMemberByEmail: (email: string) => Member | undefined;
+  joinWorkspace: (invite: Invite, member: Member) => Promise<void>;
 }
 
 const StoreCtx = createContext<Ctx | null>(null);
 
+// ─────────────────────────────────────────────
+// Mock Initial Data
+// ─────────────────────────────────────────────
+const MOCK_USER: Member = {
+  id: "u1",
+  name: "John Doe",
+  email: "john@example.com",
+  initials: "JD",
+  role: "Workspace Admin",
+  color: "#6366f1",
+  workspaceId: "w1"
+};
+
+const MOCK_WORKSPACE: Workspace = {
+  id: "w1",
+  name: "Main Workspace"
+};
+
+const MOCK_MEMBERS: Member[] = [
+  MOCK_USER,
+  { id: "u2", name: "Alice Smith", email: "alice@example.com", initials: "AS", role: "Member", color: "#10b981", workspaceId: "w1" },
+  { id: "u3", name: "Bob Jones", email: "bob@example.com", initials: "BJ", role: "Member", color: "#f59e0b", workspaceId: "w1" },
+];
+
+const MOCK_TASKS: Task[] = [
+  {
+    id: "t1",
+    title: "Design System Update",
+    description: "Update the core component library to reflect new branding guidelines.",
+    priority: "HIGH",
+    status: "IN_PROGRESS",
+    isCompleted: false,
+    dueDate: new Date(Date.now() + 86400000 * 2).toISOString(),
+    assigneeId: "u1",
+    tags: ["design", "branding"],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    workspaceId: "w1"
+  },
+  {
+    id: "t2",
+    title: "API Integration",
+    description: "Connect the frontend with the new authentication service.",
+    priority: "MEDIUM",
+    status: "TODO",
+    isCompleted: false,
+    dueDate: new Date(Date.now() + 86400000 * 5).toISOString(),
+    assigneeId: "u2",
+    tags: ["eng"],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    workspaceId: "w1"
+  }
+];
+
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [members, setMembers] = useState<Member[]>([]);
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([MOCK_WORKSPACE]);
+  const [tasks, setTasks] = useState<Task[]>(MOCK_TASKS);
+  const [members, setMembers] = useState<Member[]>(MOCK_MEMBERS);
   const [invites, setInvites] = useState<Invite[]>([]);
-  const [currentUser, setCurrentUser] = useState<Member | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<Member | null>(MOCK_USER);
+  const [loading, setLoading] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("dark");
   const [mounted, setMounted] = useState(false);
 
-  // 1. Initial Load & Auth Check
+  // Theme Persistence
   useEffect(() => {
-    const init = async () => {
-      try {
-        // Theme
-        const savedTheme = localStorage.getItem("qt_theme") as "light" | "dark" | null;
-        if (savedTheme) setTheme(savedTheme);
-        else if (window.matchMedia("(prefers-color-scheme: dark)").matches) setTheme("dark");
-
-        // User Session
-        const user = await authService.getCurrentUser();
-        if (user) {
-          const profile = await authService.getProfile(user.id);
-          const userWorkspaces = await workspaceService.getWorkspaces(user.id);
-          setWorkspaces(userWorkspaces as any);
-
-          if (userWorkspaces.length > 0) {
-            const activeWs = userWorkspaces[0];
-            const wsMembers = await workspaceService.getMembers(activeWs.id);
-            const wsTasks = await taskService.getTasks(activeWs.id);
-            
-            setTasks(wsTasks as any);
-            setMembers(wsMembers.map(m => ({
-              id: m.user_id,
-              name: m.profile.full_name,
-              email: m.profile.email,
-              initials: m.profile.full_name?.split(' ').map((n:any) => n[0]).join('') || 'U',
-              role: m.role,
-              color: '#6366f1',
-              workspaceId: m.workspace_id
-            })) as any);
-
-            const currentMember = wsMembers.find(m => m.user_id === user.id);
-            if (currentMember) {
-              setCurrentUser({
-                id: user.id,
-                name: profile.full_name,
-                email: profile.email,
-                initials: profile.full_name?.split(' ').map((n:any) => n[0]).join('') || 'U',
-                role: currentMember.role,
-                color: '#6366f1',
-                workspaceId: activeWs.id
-              });
-            }
-          }
-        }
-      } catch (err) {
-        console.error("Init Error", err);
-      } finally {
-        setLoading(false);
-        setMounted(true);
-      }
-    };
-    init();
+    const savedTheme = localStorage.getItem("qt_theme") as "light" | "dark" | null;
+    if (savedTheme) setTheme(savedTheme);
+    setMounted(true);
   }, []);
 
-  // 2. Real-time Subscriptions
-  useEffect(() => {
-    if (!currentUser?.workspaceId) return;
-
-    let taskSub: any;
-    const setupRealtime = async () => {
-      taskSub = await taskService.subscribeToTasks(currentUser.workspaceId, (payload) => {
-        if (payload.eventType === 'INSERT') {
-          setTasks(prev => [payload.new as any, ...prev]);
-        } else if (payload.eventType === 'UPDATE') {
-          setTasks(prev => prev.map(t => t.id === payload.new.id ? { ...t, ...payload.new } : t));
-        } else if (payload.eventType === 'DELETE') {
-          setTasks(prev => prev.filter(t => t.id !== payload.old.id));
-        }
-      });
-    };
-
-    setupRealtime();
-    return () => { if (taskSub) taskSub.unsubscribe(); };
-  }, [currentUser?.workspaceId]);
-
-  // 3. Theme Application
   useEffect(() => {
     if (!mounted) return;
     if (theme === "dark") document.documentElement.classList.add("dark");
@@ -164,45 +149,61 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const toggleTheme = () => setTheme(t => t === "light" ? "dark" : "light");
 
-  const activeWorkspace = workspaces[0]; // For now, handle single workspace
+  const activeWorkspace = workspaces[0];
 
   const createWorkspace = async (name: string) => {
-    if (!currentUser) return;
-    const ws = await workspaceService.createWorkspace(name, currentUser.id);
-    setWorkspaces([ws as any]);
+    const newWs = { id: `w_${Date.now()}`, name };
+    setWorkspaces([newWs]);
   };
 
   const addTask = async (t: any) => {
-    if (!currentUser?.workspaceId) return;
-    await taskService.addTask({
+    const newTask: Task = {
       ...t,
-      workspace_id: currentUser.workspaceId,
-      created_by: currentUser.id
-    });
+      id: `t_${Date.now()}`,
+      workspaceId: activeWorkspace?.id || "w1",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      tags: t.tags || []
+    };
+    setTasks(prev => [newTask, ...prev]);
   };
 
   const updateTask = async (id: string, u: Partial<Task>) => {
-    await taskService.updateTask(id, u as any);
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, ...u, updatedAt: new Date().toISOString() } : t));
   };
 
   const deleteTask = async (id: string) => {
-    await taskService.deleteTask(id);
+    setTasks(prev => prev.filter(t => t.id !== id));
   };
 
   const moveTask = async (id: string, s: TaskStatus) => {
-    await taskService.updateTask(id, { status: s, isCompleted: s === "DONE" } as any);
+    updateTask(id, { status: s, isCompleted: s === "DONE" });
   };
 
   const updateMemberRole = async (id: string, role: string) => {
-    // Implement in workspaceService later
+    setMembers(prev => prev.map(m => m.id === id ? { ...m, role } : m));
   };
 
   const addTaskComment = async (taskId: string, text: string) => {
-    // Implement in taskService later
+    const newComment: TaskComment = {
+      id: `c_${Date.now()}`,
+      taskId,
+      memberId: currentUser?.id || "u1",
+      text,
+      createdAt: new Date().toISOString()
+    };
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, comments: [...(t.comments || []), newComment] } : t));
+  };
+
+  const getInviteByEmail = (email: string) => invites.find(i => i.email === email);
+  const getMemberByEmail = (email: string) => members.find(m => m.email === email);
+  const joinWorkspace = async (invite: Invite, member: Member) => {
+    setMembers(prev => [...prev, member]);
+    setCurrentUser(member);
   };
 
   const signOut = async () => {
-    await authService.signOut();
+    setCurrentUser(null);
     window.location.href = "/login";
   };
 
@@ -214,7 +215,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       addTask, updateTask, deleteTask, moveTask,
       theme, toggleTheme,
       updateMemberRole, addTaskComment,
-      signOut
+      signOut,
+      getInviteByEmail, getMemberByEmail, joinWorkspace
     }}> {children} </StoreCtx.Provider>
   );
 }
