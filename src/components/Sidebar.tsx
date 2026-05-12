@@ -92,7 +92,7 @@ export default function Sidebar() {
       <div className="flex-1 mt-6 px-3 flex flex-col min-h-0 overflow-hidden">
         <div className="flex items-center justify-between px-3 mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
           <span>Projects</span>
-          {!isMember && (
+          {isAdmin && (
             <button
               onClick={() => setAddingProject(true)}
               className="rounded-md p-0.5 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white transition-colors"
