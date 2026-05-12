@@ -2,9 +2,7 @@
 import React, { useState } from "react";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
-import { Users, Mail, Phone, MoreHorizontal, Shield, Clock, Plus, X, Star, CheckCircle2, Search, Filter, LayoutGrid, List, Info } from "lucide-react";
-import { MemberCard } from "@/components/MemberCard";
-import { InviteCard } from "@/components/InviteCard";
+import { Users, MoreHorizontal, Shield, Clock, Plus, X, Search, Info, LayoutGrid } from "lucide-react";
 
 const ROLES = [
   "Admin",
