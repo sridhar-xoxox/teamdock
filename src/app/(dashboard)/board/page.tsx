@@ -103,7 +103,9 @@ export default function DashboardPage() {
 
   // Filter Data
   const assignedToMe = tasks.filter(t => t.assigneeId === currentUser?.id);
-  const displayTasks = assignedToMe.length > 0 ? assignedToMe.slice(0, 5) : tasks.slice(0, 3);
+  const displayTasks = isMember 
+    ? assignedToMe.slice(0, 5) 
+    : (assignedToMe.length > 0 ? assignedToMe.slice(0, 5) : tasks.slice(0, 3));
   
   const displayPeople = members.length > 0 ? members : [
     { id: "m1", name: "Marc Atenson", email: "marcnine@gmail.com", color: "bg-indigo-100", initials: "MA" }
