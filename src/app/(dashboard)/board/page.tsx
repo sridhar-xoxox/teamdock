@@ -91,6 +91,9 @@ export default function DashboardPage() {
 
   if (!mounted) return null;
 
+  const isAdmin = currentUser?.role?.toLowerCase() === "admin";
+  const isMember = currentUser?.role?.toLowerCase() === "member";
+
   // Calculated stats
   const realProjectsCount = projects.length;
   const realTasksCount = tasks.length;
@@ -110,9 +113,6 @@ export default function DashboardPage() {
   const displayPeople = members.length > 0 ? members : [
     { id: "m1", name: "Marc Atenson", email: "marcnine@gmail.com", color: "bg-indigo-100", initials: "MA" }
   ];
-
-  const isAdmin = currentUser?.role?.toLowerCase() === "admin";
-  const isMember = currentUser?.role?.toLowerCase() === "member";
 
   return (
     <div className="flex-1 h-full overflow-y-auto bg-transparent custom-scrollbar pb-10">

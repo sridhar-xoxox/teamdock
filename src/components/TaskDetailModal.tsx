@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { ArrowLeft, Trash2, CheckCircle, Clock, Star, MoreVertical, Sparkles, Send, MessageSquare, Archive, Reply, Forward, Printer, ExternalLink, User, Calendar, Paperclip, ImageIcon, Maximize2, X } from "lucide-react";
+import { ArrowLeft, Trash2, Clock, Star, MoreVertical, MessageSquare, Archive, Reply, Calendar, Paperclip, Maximize2, X } from "lucide-react";
 import { useStore, Task } from "@/lib/store";
 import { cn } from "@/lib/utils";
 

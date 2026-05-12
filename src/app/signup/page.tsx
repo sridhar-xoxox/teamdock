@@ -9,7 +9,7 @@ const COLORS = ["#6366f1", "#22d3ee", "#a855f7", "#f59e0b", "#ec4899", "#10b981"
 
 export default function SignUpPage() {
   const router = useRouter();
-  const { createWorkspace, setCurrentUser } = useStore();
+  const { createWorkspace } = useStore();
   
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
