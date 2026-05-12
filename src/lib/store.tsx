@@ -134,7 +134,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           { id: "p2", name: "Mobile App", color: "bg-emerald-500", workspaceId: "ws_1", createdAt: new Date().toISOString() },
           { id: "p3", name: "Marketing Q3", color: "bg-orange-500", workspaceId: "ws_1", createdAt: new Date().toISOString() },
         ];
-        const sampleTasks = [
+        const sampleTasks: Task[] = [
           { id: "t_1", title: "Redesign Dashboard UI", description: "Match the new modern dashboard design", priority: "HIGH", status: "IN_PROGRESS", isCompleted: false, dueDate: new Date(Date.now() + 86400000).toISOString(), assigneeId: "u_1", tags: ["UI", "Design"], workspaceId: "ws_1", projectId: "p1", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
           { id: "t_2", title: "Fix Authentication Bug", description: "Resolve session timeout issues", priority: "HIGH", status: "TODO", isCompleted: false, dueDate: new Date(Date.now() + 172800000).toISOString(), assigneeId: "u_2", tags: ["Bug", "Auth"], workspaceId: "ws_1", projectId: "p1", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
           { id: "t_3", title: "Draft Marketing Copy", description: "Prepare social media posts", priority: "MEDIUM", status: "DONE", isCompleted: true, dueDate: new Date(Date.now() - 86400000).toISOString(), assigneeId: "u_3", tags: ["Marketing"], workspaceId: "ws_2", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
