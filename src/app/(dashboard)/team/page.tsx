@@ -216,7 +216,7 @@ export default function TeamPage() {
                     <div className="flex items-center gap-2 bg-slate-100 dark:bg-white/10 p-1 rounded-xl border border-slate-200 dark:border-white/5">
                       <select
                         defaultValue={member.role}
-                        onChange={(e) => updateMemberRole(member.membershipId, e.target.value)}
+                        onChange={(e) => updateMemberRole(member.id, e.target.value)}
                         className="bg-transparent border-none px-3 py-1 text-[11px] font-black uppercase tracking-widest text-slate-900 dark:text-white outline-none cursor-pointer"
                       >
                         {ROLES.map(role => (
