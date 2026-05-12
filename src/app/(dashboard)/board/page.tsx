@@ -112,7 +112,6 @@ export default function DashboardPage() {
   ];
 
   const isAdmin = currentUser?.role?.toLowerCase() === "admin";
-  const isManager = currentUser?.role?.toLowerCase() === "manager";
   const isMember = currentUser?.role?.toLowerCase() === "member";
 
   return (

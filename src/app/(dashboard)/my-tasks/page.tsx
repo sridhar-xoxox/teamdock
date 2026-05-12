@@ -8,19 +8,17 @@ import TaskDetailModal from "@/components/TaskDetailModal";
 import { TaskList } from "@/components/TaskList";
 
 export default function MyTasksPage() {
-  const { tasks: allTasks, members, updateTask, deleteTask, projects, currentUser } = useStore();
+  const { tasks: workspaceTasks, members, updateTask, deleteTask, projects, currentUser } = useStore();
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"ALL" | "HIGH" | "DONE">("ALL");
 
-  const isAdmin = currentUser?.role?.toLowerCase() === "admin";
-  const isManager = currentUser?.role?.toLowerCase() === "manager";
   const isMember = currentUser?.role?.toLowerCase() === "member";
 
   // RBAC Filter: Members see only their own tasks
   const tasks = (isMember && currentUser) 
-    ? allTasks.filter(t => t.assigneeId === currentUser.id)
-    : allTasks;
+    ? workspaceTasks.filter(t => t.assigneeId === currentUser.id)
+    : workspaceTasks;
 
   const handleToggle = (id: string, newIsCompleted: boolean) => {
     updateTask(id, { isCompleted: newIsCompleted, status: newIsCompleted ? "DONE" : "TODO" });
