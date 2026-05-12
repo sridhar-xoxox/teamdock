@@ -11,17 +11,19 @@ const NAV = [
   { href: "/board", label: "Home", icon: Grid },
   { href: "/my-tasks", label: "My Tasks", icon: ListTodo },
   { href: "/team", label: "Team", icon: Users },
-  { href: "/analytics", label: "Analytics", icon: BarChart3 },
 ];
 
 
 export default function Sidebar() {
   const path = usePathname();
-  const { 
-    tasks, activeWorkspace, currentUser, 
-    projects, addProject, deleteProject 
+  const {
+    tasks, activeWorkspace, currentUser,
+    projects, addProject, deleteProject
   } = useStore();
-  
+
+  const isAdmin = currentUser?.role?.toLowerCase() === "admin";
+  const isMember = currentUser?.role?.toLowerCase() === "member";
+
   const [addingProject, setAddingProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
 
@@ -54,11 +56,13 @@ export default function Sidebar() {
       </div>
 
       {/* Compose Button */}
-      <div className="px-4 pb-4">
-        <Link href="/add-task" className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-500/25 transition-all hover:bg-indigo-500 hover:-translate-y-0.5 hover:shadow-indigo-500/40">
-          <Plus className="h-4 w-4" /> Compose Task
-        </Link>
-      </div>
+      {!isMember && (
+        <div className="px-4 pb-4">
+          <Link href="/add-task" className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-500/25 transition-all hover:bg-indigo-500 hover:-translate-y-0.5 hover:shadow-indigo-500/40">
+            <Plus className="h-4 w-4" /> Compose Task
+          </Link>
+        </div>
+      )}
 
       {/* Nav */}
       <nav className="space-y-0.5 px-3">
@@ -88,12 +92,14 @@ export default function Sidebar() {
       <div className="flex-1 mt-6 px-3 flex flex-col min-h-0 overflow-hidden">
         <div className="flex items-center justify-between px-3 mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
           <span>Projects</span>
-          <button
-            onClick={() => setAddingProject(true)}
-            className="rounded-md p-0.5 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white transition-colors"
-          >
-            <Plus className="h-3.5 w-3.5" />
-          </button>
+          {!isMember && (
+            <button
+              onClick={() => setAddingProject(true)}
+              className="rounded-md p-0.5 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white transition-colors"
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
 
         {addingProject && (
@@ -126,12 +132,14 @@ export default function Sidebar() {
                 {p.name[0].toUpperCase()}
               </div>
               <span className="truncate flex-1">{p.name}</span>
-              <button
-                onClick={() => deleteProject(p.id)}
-                className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-red-50 dark:hover:bg-red-500/10 text-slate-300 hover:text-red-500 transition-all"
-              >
-                <Trash2 className="h-3 w-3" />
-              </button>
+              {isAdmin && (
+                <button
+                  onClick={() => deleteProject(p.id)}
+                  className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-red-50 dark:hover:bg-red-500/10 text-slate-300 hover:text-red-500 transition-all"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              )}
             </div>
           ))}
         </div>
