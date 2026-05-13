@@ -246,15 +246,9 @@ export default function DashboardPage() {
             {/* People Section Card */}
             <div className="p-7 rounded-[32px] bg-white dark:bg-[#1a1f2e] border border-slate-100 dark:border-white/5 shadow-sm">
               <SectionHeader title="People" count={displayPeople.length}>
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-100 dark:border-white/5 text-[11px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-wider bg-slate-50/50 dark:bg-white/5">
-                    Frequent Collaborators
-                    <ChevronDown className="h-3.5 w-3.5" />
-                  </div>
-                  <button className="p-2 rounded-xl bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 hover:scale-105 active:scale-95 transition-all">
-                    <Plus className="h-5 w-5" />
-                  </button>
-                </div>
+                <button className="p-2 rounded-xl bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 hover:scale-105 active:scale-95 transition-all">
+                  <Plus className="h-5 w-5" />
+                </button>
               </SectionHeader>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
