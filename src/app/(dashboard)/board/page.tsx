@@ -148,7 +148,7 @@ export default function DashboardPage() {
   );
 
   return (
-    <div className="flex-1 bg-transparent pb-10">
+    <div className="flex-1 w-full bg-transparent pb-10">
       {/* Top Header */}
       <div className="sticky top-0 z-20 bg-white/40 dark:bg-[#0d1117]/40 backdrop-blur-xl border-b border-slate-100 dark:border-white/5 mb-4 md:mb-8">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-4 md:py-5 flex items-center justify-between gap-4">
@@ -181,12 +181,14 @@ export default function DashboardPage() {
       <div className="max-w-7xl mx-auto">
         <div className="px-4 md:px-8 space-y-6 md:space-y-10">
         {/* Stats Row */}
-        <div className="flex gap-5 overflow-x-auto pb-4 no-scrollbar">
-          <StatCard title="Total Project" value={realProjectsCount || 0} trend="up" trendValue={2} color="text-indigo-600" />
-          <StatCard title="Total Tasks" value={realTasksCount || 0} trend="up" trendValue={4} color="text-indigo-400" />
-          <StatCard title="Assigned Tasks" value={realAssignedCount || 0} trend="down" trendValue={3} color="text-orange-500" />
-          <StatCard title="Completed Tasks" value={realCompletedCount || 0} trend="up" trendValue={1} color="text-emerald-500" />
-          <StatCard title="Overdue Tasks" value={realOverdueCount || 0} trend="up" trendValue={2} color="text-red-500" />
+        <div className="grid grid-cols-2 lg:flex gap-4 md:gap-6">
+          <StatCard title="Total Projects" value={realProjectsCount || 0} trend="up" trendValue={2} color="text-indigo-600" />
+          <StatCard title="Total Tasks" value={tasks.length} trend="up" trendValue={4} color="text-emerald-600" />
+          <StatCard title="Active Members" value={members.length} trend="up" trendValue={1} color="text-amber-600" />
+          <StatCard title="Completed" value={realCompletedCount || 0} trend="up" trendValue={1} color="text-emerald-500" />
+          <div className="col-span-2 lg:flex-1">
+            <StatCard title="Overdue" value={realOverdueCount || 0} trend="up" trendValue={2} color="text-red-500" />
+          </div>
         </div>
 
         {/* Grid Layout */}
