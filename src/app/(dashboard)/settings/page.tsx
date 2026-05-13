@@ -1,7 +1,7 @@
 "use client";
 
 import { useStore } from "@/lib/store";
-import { Sun, Moon, Lock, Shield, User, Bell, Palette, Users, Save, CheckCircle2 } from "lucide-react";
+import { Sun, Moon, Lock, Shield, User, Bell, Palette, Save, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -31,30 +31,25 @@ export default function SettingsPage() {
     setTimeout(() => setStatus(null), 3000);
   };
 
-  const handleRoleChange = (memberId: string, newRole: string) => {
-    updateMemberRole(memberId, newRole);
-    setStatus({ type: 'success', message: `Role updated for member` });
-    setTimeout(() => setStatus(null), 3000);
-  };
 
   return (
-    <div className="max-w-5xl mx-auto p-8">
-      <div className="mb-8 flex items-end justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Settings</h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">Manage your account preferences and team settings.</p>
+    <div className="max-w-5xl mx-auto p-4 sm:p-8">
+      <div className="mb-8 flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">Settings</h1>
+          <p className="text-[11px] sm:text-sm text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Manage your account preferences and team settings.</p>
         </div>
         <button 
           onClick={() => currentUser && logoutSession(currentUser.id)}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
+          className="flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-bold text-red-500 hover:bg-red-500/10 rounded-xl transition-all shrink-0 border border-transparent hover:border-red-500/20"
         >
           Sign Out
         </button>
       </div>
 
-      <div className="flex gap-10">
+      <div className="flex flex-col lg:flex-row gap-8 lg:gap-10">
         {/* Sidebar Tabs */}
-        <div className="w-64 shrink-0 flex flex-col gap-1">
+        <div className="w-full lg:w-64 shrink-0 flex flex-row lg:flex-col gap-1 overflow-x-auto lg:overflow-visible pb-2 lg:pb-0 custom-scrollbar">
           <button 
             onClick={() => setActiveTab("general")}
             className={cn(
@@ -64,7 +59,7 @@ export default function SettingsPage() {
                 : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5"
             )}
           >
-            <User className="h-4 w-4" /> Account
+            <User className="h-4 w-4" /> <span className="shrink-0">Account</span>
           </button>
           <button 
             onClick={() => setActiveTab("appearance")}
@@ -75,7 +70,7 @@ export default function SettingsPage() {
                 : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5"
             )}
           >
-            <Palette className="h-4 w-4" /> Appearance
+            <Palette className="h-4 w-4" /> <span className="shrink-0">Appearance</span>
           </button>
           <button 
             onClick={() => setActiveTab("security")}
@@ -86,27 +81,14 @@ export default function SettingsPage() {
                 : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5"
             )}
           >
-            <Lock className="h-4 w-4" /> Security
+            <Lock className="h-4 w-4" /> <span className="shrink-0">Security</span>
           </button>
           
-          {isAdmin && (
-            <button 
-              onClick={() => setActiveTab("admin")}
-              className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all mt-4 border-t border-slate-200 dark:border-white/10 pt-5",
-                activeTab === "admin" 
-                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/20" 
-                  : "text-amber-600 dark:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-500/5"
-              )}
-            >
-              <Shield className="h-4 w-4" /> Admin Access
-            </button>
-          )}
         </div>
 
         {/* Content */}
-        <div className="flex-1">
-          <div className="bg-white dark:bg-[#161b22] border border-slate-200 dark:border-white/10 rounded-2xl p-8 shadow-sm">
+        <div className="flex-1 min-w-0">
+          <div className="bg-white dark:bg-[#161b22] border border-slate-200 dark:border-white/10 rounded-2xl p-4 sm:p-8 shadow-sm">
             
             {status && (
               <div className={cn(
@@ -121,17 +103,17 @@ export default function SettingsPage() {
             {activeTab === "general" && (
               <div className="space-y-8">
                 <div>
-                  <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6">Profile Information</h3>
-                  <div className="flex items-center gap-6">
+                  <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mb-6">Profile Information</h3>
+                  <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 text-center sm:text-left">
                     <div 
-                      className="h-20 w-20 rounded-full flex items-center justify-center text-2xl font-bold text-white shadow-xl"
+                      className="h-20 w-20 rounded-full flex items-center justify-center text-2xl font-bold text-white shadow-xl shrink-0"
                       style={{ backgroundColor: currentUser?.color || "#6366f1" }}
                     >
                       {currentUser?.initials}
                     </div>
-                    <div>
-                      <p className="text-lg font-bold text-slate-900 dark:text-white">{currentUser?.name}</p>
-                      <p className="text-slate-500 dark:text-slate-400">{currentUser?.email}</p>
+                    <div className="min-w-0">
+                      <p className="text-lg font-bold text-slate-900 dark:text-white truncate">{currentUser?.name}</p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 truncate">{currentUser?.email}</p>
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 mt-2 capitalize">
                         {currentUser?.role}
                       </span>
@@ -147,35 +129,35 @@ export default function SettingsPage() {
                   <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Theme Preference</h3>
                   <p className="text-sm text-slate-500 dark:text-slate-400 mb-8">Choose how TeamDock looks to you.</p>
                   
-                  <div className="grid grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     <button 
                       onClick={() => theme !== 'light' && toggleTheme()}
                       className={cn(
-                        "flex flex-col items-center gap-4 p-8 rounded-2xl border-2 transition-all group",
+                        "flex flex-col items-center gap-4 p-6 sm:p-8 rounded-2xl border-2 transition-all group",
                         theme === 'light' 
                           ? "border-indigo-600 bg-indigo-600/5 ring-4 ring-indigo-600/10" 
                           : "border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20"
                       )}
                     >
-                      <div className="h-16 w-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 group-hover:scale-110 transition-transform">
-                        <Sun className="h-8 w-8" />
+                      <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 group-hover:scale-110 transition-transform">
+                        <Sun className="h-6 w-6 sm:h-8 sm:w-8" />
                       </div>
-                      <span className="font-bold text-slate-900 dark:text-white">Light Mode</span>
+                      <span className="font-bold text-slate-900 dark:text-white text-sm sm:text-base">Light Mode</span>
                     </button>
-
+ 
                     <button 
                       onClick={() => theme !== 'dark' && toggleTheme()}
                       className={cn(
-                        "flex flex-col items-center gap-4 p-8 rounded-2xl border-2 transition-all group",
+                        "flex flex-col items-center gap-4 p-6 sm:p-8 rounded-2xl border-2 transition-all group",
                         theme === 'dark' 
                           ? "border-indigo-600 bg-indigo-600/5 ring-4 ring-indigo-600/10" 
                           : "border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20"
                       )}
                     >
-                      <div className="h-16 w-16 rounded-full bg-slate-800 flex items-center justify-center text-white group-hover:scale-110 transition-transform">
-                        <Moon className="h-8 w-8" />
+                      <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-full bg-slate-800 flex items-center justify-center text-white group-hover:scale-110 transition-transform">
+                        <Moon className="h-6 w-6 sm:h-8 sm:w-8" />
                       </div>
-                      <span className="font-bold text-slate-900 dark:text-white">Dark Mode</span>
+                      <span className="font-bold text-slate-900 dark:text-white text-sm sm:text-base">Dark Mode</span>
                     </button>
                   </div>
                 </div>
@@ -201,7 +183,7 @@ export default function SettingsPage() {
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                       <div className="space-y-1.5">
                         <label className="text-xs font-bold uppercase tracking-widest text-slate-500">New Password</label>
                         <input 
@@ -213,7 +195,7 @@ export default function SettingsPage() {
                           required
                         />
                       </div>
-
+ 
                       <div className="space-y-1.5">
                         <label className="text-xs font-bold uppercase tracking-widest text-slate-500">Confirm New Password</label>
                         <input 
@@ -240,66 +222,6 @@ export default function SettingsPage() {
               </div>
             )}
 
-            {activeTab === "admin" && isAdmin && (
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Member Role Management</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-8">As an admin, you can manage team roles and permissions.</p>
-                  
-                  <div className="overflow-hidden border border-slate-200 dark:border-white/10 rounded-2xl">
-                    <table className="w-full text-left border-collapse">
-                      <thead className="bg-slate-50 dark:bg-white/5">
-                        <tr>
-                          <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-500">Member</th>
-                          <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-500">Current Role</th>
-                          <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-500 text-right">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-200 dark:divide-white/10">
-                        {members.map(member => (
-                          <tr key={member.id} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-3">
-                                <div 
-                                  className="h-8 w-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
-                                  style={{ backgroundColor: member.color }}
-                                >
-                                  {member.initials}
-                                </div>
-                                <div>
-                                  <p className="text-sm font-bold text-slate-900 dark:text-white">{member.name}</p>
-                                  <p className="text-[11px] text-slate-500">{member.email}</p>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4">
-                              <span className={cn(
-                                "inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-tight",
-                                member.role.toLowerCase() === "admin" ? "bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400" : "bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-400"
-                              )}>
-                                {member.role}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 text-right">
-                              <select 
-                                defaultValue={member.role}
-                                onChange={(e) => handleRoleChange(member.id, e.target.value)}
-                                className="bg-slate-50 dark:bg-white/10 border border-slate-200 dark:border-white/10 rounded-lg px-2 py-1 text-xs font-semibold focus:ring-2 focus:ring-indigo-500 outline-none"
-                              >
-                                <option value="Admin">Admin</option>
-                                <option value="Manager">Manager</option>
-                                <option value="Member">Member</option>
-                                <option value="Guest">Guest</option>
-                              </select>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            )}
 
           </div>
         </div>

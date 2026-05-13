@@ -161,14 +161,13 @@ export default function TeamPage() {
             
             return (
               <div key={member.id} className={cn(
-                "group relative flex items-center gap-6 px-8 py-5 rounded-[1.25rem] transition-all duration-300 border cursor-pointer",
+                "group relative flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 px-4 sm:px-8 py-4 sm:py-5 rounded-[1.25rem] transition-all duration-300 border cursor-pointer",
                 "bg-white dark:bg-white/[0.03] border-slate-100 dark:border-white/5 hover:border-indigo-500/30 hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none hover:-translate-y-0.5"
               )}>
 
-                {/* Member Identity */}
-                <div className="flex items-center gap-4 w-64 shrink-0">
+                <div className="flex items-center gap-4 w-full sm:w-64 shrink-0">
                   <div
-                    className="h-12 w-12 rounded-2xl flex items-center justify-center text-sm font-black text-white shadow-xl group-hover:scale-110 transition-transform duration-500 relative overflow-hidden"
+                    className="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center text-xs sm:text-sm font-black text-white shadow-xl group-hover:scale-110 transition-transform duration-500 relative overflow-hidden shrink-0"
                     style={{ backgroundColor: member.color }}
                   >
                     <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent" />
@@ -180,9 +179,8 @@ export default function TeamPage() {
                   </div>
                 </div>
 
-                {/* Role & Load Indicator */}
-                <div className="flex-1 flex items-center gap-8 min-w-0">
-                  <div className="flex items-center gap-3 min-w-[140px]">
+                <div className="flex items-center gap-4 sm:gap-8 min-w-0 w-full sm:w-auto">
+                  <div className="flex items-center gap-3">
                     <span className={cn(
                       "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm",
                       member.role.toLowerCase() === "admin" 
@@ -193,9 +191,9 @@ export default function TeamPage() {
                     </span>
                   </div>
                   
-                  {/* Activity Spark (Unique feature) */}
-                  <div className="hidden md:flex items-center gap-4 flex-1">
-                    <div className="flex-1 h-1.5 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden max-w-[120px]">
+                  {/* Activity Spark */}
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className="flex-1 h-1 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden max-w-[80px] sm:max-w-[120px]">
                       <div 
                         className={cn(
                           "h-full transition-all duration-1000",
@@ -204,18 +202,17 @@ export default function TeamPage() {
                         style={{ width: `${Math.min((memberTasks.length / 8) * 100, 100)}%` }}
                       />
                     </div>
-                    <span className="text-[10px] font-black text-slate-400 uppercase">{memberTasks.length} Tasks</span>
+                    <span className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase shrink-0">{memberTasks.length} Tasks</span>
                   </div>
                 </div>
 
-                {/* Hover Actions */}
-                <div className="flex items-center gap-4 shrink-0 opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0 transition-all duration-300" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center gap-4 shrink-0 sm:opacity-0 sm:group-hover:opacity-100 sm:translate-x-4 sm:group-hover:translate-x-0 transition-all duration-300 w-full sm:w-auto mt-2 sm:mt-0 justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-white/5" onClick={e => e.stopPropagation()}>
                   {isAdmin ? (
-                    <div className="flex items-center gap-2 bg-slate-100 dark:bg-white/10 p-1 rounded-xl border border-slate-200 dark:border-white/5">
+                    <div className="flex items-center gap-2 bg-slate-100 dark:bg-white/10 p-1 rounded-xl border border-slate-200 dark:border-white/5 flex-1 sm:flex-initial">
                       <select
                         defaultValue={member.role}
                         onChange={(e) => updateMemberRole(member.id, e.target.value)}
-                        className="bg-transparent border-none px-3 py-1 text-[11px] font-black uppercase tracking-widest text-slate-900 dark:text-white outline-none cursor-pointer"
+                        className="bg-transparent border-none px-3 py-1 text-[11px] font-black uppercase tracking-widest text-slate-900 dark:text-white outline-none cursor-pointer w-full sm:w-auto"
                       >
                         {ROLES.map(role => (
                           <option key={role} value={role} className="bg-white dark:bg-[#0a0f1e]">{role}</option>

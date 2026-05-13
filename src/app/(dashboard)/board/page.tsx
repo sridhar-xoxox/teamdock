@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { 
-  Search, Settings, HelpCircle, TrendingUp, TrendingDown, Eye, Plus, 
+  Search, Settings, TrendingUp, TrendingDown, Eye, Plus, 
   MoreVertical, MoreHorizontal, Filter, Bold, Italic, Underline, 
   Strikethrough, List, ListOrdered, ChevronDown, Bell, Grid, User,
   Calendar, Trash2, FolderKanban
@@ -9,6 +9,8 @@ import {
 import { useStore, Task, Member, Workspace, Project } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useRef } from "react";
 
 // --- Helpers ---
 const formatDate = (dateStr?: string) => {
@@ -65,6 +67,8 @@ const SectionHeader = ({ title, children, count }: { title: string; children?: R
 );
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const { 
     tasks, members, workspaces, currentUser, 
     allMembers, createWorkspace, switchSession, allTasks,
@@ -89,6 +93,17 @@ export default function DashboardPage() {
     }
   }, [notepadContent, mounted]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   if (!mounted) return null;
 
   const isAdmin = currentUser?.role?.toLowerCase() === "admin";
@@ -104,29 +119,48 @@ export default function DashboardPage() {
   // Workspace Name Resolver
   const getWorkspaceName = (id: string) => workspaces.find(w => w.id === id)?.name || id;
 
-  // Filter Data
-  const assignedToMe = tasks.filter(t => t.assigneeId === currentUser?.id);
+  // Filter Data based on Search
+  const searchLower = search.toLowerCase();
+  
+  const filteredTasks = tasks.filter(t => 
+    t.title.toLowerCase().includes(searchLower) ||
+    getWorkspaceName(t.workspaceId).toLowerCase().includes(searchLower)
+  );
+
+  const filteredProjects = projects.filter(p => 
+    p.name.toLowerCase().includes(searchLower)
+  );
+
+  const filteredMembers = members.filter(m => 
+    m.name.toLowerCase().includes(searchLower) ||
+    m.email.toLowerCase().includes(searchLower)
+  );
+
+  const assignedToMe = filteredTasks.filter(t => t.assigneeId === currentUser?.id);
   const displayTasks = isMember 
     ? assignedToMe.slice(0, 5) 
-    : (assignedToMe.length > 0 ? assignedToMe.slice(0, 5) : tasks.slice(0, 3));
+    : (assignedToMe.length > 0 ? assignedToMe.slice(0, 5) : filteredTasks.slice(0, 3));
   
-  const displayPeople = members.length > 0 ? members : [
-    { id: "m1", name: "Marc Atenson", email: "marcnine@gmail.com", color: "bg-indigo-100", initials: "MA" }
-  ];
+  const displayPeople = filteredMembers.length > 0 ? filteredMembers : (
+    search === "" 
+      ? [{ id: "m1", name: "Marc Atenson", email: "marcnine@gmail.com", color: "bg-indigo-100", initials: "MA" }] 
+      : []
+  );
 
   return (
     <div className="flex-1 h-full overflow-y-auto bg-transparent custom-scrollbar pb-10">
       {/* Top Header */}
-      <div className="sticky top-0 z-20 bg-white/40 dark:bg-[#0d1117]/40 backdrop-blur-xl border-b border-slate-100 dark:border-white/5 px-8 py-5 mb-8">
-        <div className="flex items-center justify-between gap-8">
+      <div className="sticky top-0 z-20 bg-white/40 dark:bg-[#0d1117]/40 backdrop-blur-xl border-b border-slate-100 dark:border-white/5 px-4 md:px-8 py-4 md:py-5 mb-8">
+        <div className="flex items-center justify-between gap-4 md:gap-8">
           <div className="shrink-0">
-            <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Home</h1>
-            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5 tracking-wide">Monitor all of your projects and tasks here</p>
+            <h1 className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 dark:text-white">Home</h1>
+            <p className="text-[10px] md:text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5 tracking-wide">Monitor all of your projects and tasks here</p>
           </div>
-          <div className="flex-1 max-w-2xl flex items-center gap-6">
-            <div className="relative flex-1 group">
+          <div className="flex items-center gap-3 md:gap-6">
+            <div className="hidden md:flex relative w-64 lg:w-96 group">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
               <input 
+                ref={searchInputRef}
                 type="text" 
                 placeholder="Search anything..." 
                 value={search}
@@ -138,12 +172,12 @@ export default function DashboardPage() {
                 <kbd className="px-2 py-1 rounded-lg border border-slate-200 dark:border-white/10 text-[10px] font-black text-slate-500 bg-white dark:bg-white/10 shadow-sm">F</kbd>
               </div>
             </div>
-            <div className="flex items-center gap-3 shrink-0">
-              <button className="p-2.5 rounded-2xl text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/5 shadow-sm hover:shadow transition-all border border-transparent hover:border-slate-100 dark:hover:border-white/10">
+            <div className="flex items-center shrink-0">
+              <button 
+                onClick={() => router.push("/settings")}
+                className="p-2.5 rounded-2xl text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/5 shadow-sm hover:shadow transition-all border border-transparent hover:border-slate-100 dark:hover:border-white/10"
+              >
                 <Settings className="h-5 w-5" />
-              </button>
-              <button className="p-2.5 rounded-2xl text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/5 shadow-sm hover:shadow transition-all border border-transparent hover:border-slate-100 dark:hover:border-white/10">
-                <HelpCircle className="h-5 w-5" />
               </button>
             </div>
           </div>
@@ -245,7 +279,7 @@ export default function DashboardPage() {
             
             {/* Projects Section Card */}
             <div className="p-7 rounded-[32px] bg-white dark:bg-[#1a1f2e] border border-slate-100 dark:border-white/5 shadow-sm">
-              <SectionHeader title="Projects" count={projects.length}>
+              <SectionHeader title="Projects" count={filteredProjects.length}>
                 {isAdmin && (
                   <button
                     onClick={() => { setAddingProject(true); setNewProjectName(""); }}
@@ -291,12 +325,12 @@ export default function DashboardPage() {
               )}
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                {projects.length === 0 && !addingProject && (
+                {filteredProjects.length === 0 && !addingProject && (
                   <div className="col-span-2 py-10 text-center text-slate-400 dark:text-slate-600 font-medium border-2 border-dashed border-slate-100 dark:border-white/5 rounded-3xl">
-                    No projects yet — click + to add one
+                    {search ? "No projects match your search" : "No projects yet — click + to add one"}
                   </div>
                 )}
-                {projects.map((p) => {
+                {filteredProjects.map((p) => {
                   return (
                     <div
                       key={p.id}

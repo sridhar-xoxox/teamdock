@@ -2,10 +2,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Grid, ListTodo, Users, Settings, LogOut, Plus, Trash2 } from "lucide-react";
+import { Grid, ListTodo, Users, BarChart3, Settings, LogOut, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/lib/store";
-import { Logo } from "@/components/Logo";
+import { Logo } from "@/components/ui/Logo";
 
 const NAV = [
   { href: "/board", label: "Home", icon: Grid },

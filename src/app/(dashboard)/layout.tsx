@@ -1,10 +1,10 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import Sidebar from "@/components/Sidebar";
+import Sidebar from "@/components/layout/Sidebar";
 import { useStore } from "@/lib/store";
 import { Menu, Sun, Moon } from "lucide-react";
-import { Logo } from "@/components/Logo";
+import { Logo } from "@/components/ui/Logo";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { currentUser, theme, toggleTheme } = useStore();

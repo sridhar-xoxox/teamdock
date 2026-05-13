@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Zap, ShieldCheck, Eye, EyeOff, Chrome, Apple, Facebook, Linkedin, UserPlus } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { Logo } from "@/components/Logo";
+import { Logo } from "@/components/ui/Logo";
 
 const COLORS = ["#6366f1", "#22d3ee", "#a855f7", "#f59e0b", "#ec4899", "#10b981"];
 

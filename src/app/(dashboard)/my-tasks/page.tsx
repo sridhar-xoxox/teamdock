@@ -1,11 +1,11 @@
 "use client";
 import { useState } from "react";
-import { Plus, Search, CheckCircle, Star, Inbox, Archive, ChevronLeft, ChevronRight, ArrowRight, Zap } from "lucide-react";
+import { Plus, Search, CheckCircle, Star, Inbox, Archive, ChevronLeft, ChevronRight, FolderKanban, ArrowRight, Zap } from "lucide-react";
 import Link from "next/link";
 import { useStore, Priority, Task } from "@/lib/store";
 import { cn } from "@/lib/utils";
-import TaskDetailModal from "@/components/TaskDetailModal";
-import { TaskList } from "@/components/TaskList";
+import TaskDetailModal from "@/components/modals/TaskDetailModal";
+import { TaskList } from "@/components/dashboard/TaskList";
 
 export default function MyTasksPage() {
   const { tasks: workspaceTasks, members, updateTask, deleteTask, projects, currentUser } = useStore();

@@ -34,7 +34,7 @@ export const workspaceService = {
       .eq('user_id', userId);
     
     if (error) throw error;
-    return data.map((d: any) => d.workspace);
+    return data.map(d => d.workspace);
   },
 
   async getMembers(workspaceId: string) {
