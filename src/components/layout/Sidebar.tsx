@@ -41,8 +41,8 @@ export default function Sidebar() {
   return (
     <aside className="flex h-full w-60 shrink-0 flex-col border-r border-slate-200 dark:border-white/10 bg-white dark:bg-[#0d1117] text-slate-900 dark:text-slate-100 transition-colors duration-300">
       {/* Logo */}
-      <div className="flex items-center gap-2.5 px-5 py-5 text-slate-900 dark:text-white">
-        <Logo className="h-8 w-8" />
+      <div className="flex items-center gap-2.5 px-5 py-5 text-slate-950 dark:text-white">
+        <Logo className="h-8 w-8 text-indigo-600 dark:text-white" />
         <span className="text-2xl font-bold tracking-tight">
           teamdock
         </span>
@@ -90,7 +90,7 @@ export default function Sidebar() {
 
       {/* Projects Section */}
       <div className="flex-1 mt-6 px-3 flex flex-col min-h-0 overflow-hidden">
-        <div className="flex items-center justify-between px-3 mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+        <div className="flex items-center justify-between px-3 mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
           <span>Projects</span>
           {isAdmin && (
             <button
@@ -131,7 +131,7 @@ export default function Sidebar() {
               )}>
                 {p.name[0].toUpperCase()}
               </div>
-              <span className="truncate flex-1">{p.name}</span>
+              <span className="truncate flex-1 font-semibold text-slate-700 dark:text-slate-300 group-hover:text-slate-950 dark:group-hover:text-white transition-colors">{p.name}</span>
               {isAdmin && (
                 <button
                   onClick={() => deleteProject(p.id)}

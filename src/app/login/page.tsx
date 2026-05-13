@@ -113,8 +113,8 @@ export default function LoginPage() {
         {/* Left Side: Auth Form */}
         <div className="w-full md:w-1/2 p-8 sm:p-12 flex flex-col">
           {/* Logo */}
-          <div className="flex items-center gap-2 mb-10 text-slate-900 dark:text-white">
-            <Logo className="h-10 w-10" />
+          <div className="flex items-center gap-2 mb-10 text-slate-950 dark:text-white">
+            <Logo className="h-10 w-10 text-indigo-600 dark:text-white" />
             <span className="text-3xl font-bold tracking-tight">
               teamdock
             </span>

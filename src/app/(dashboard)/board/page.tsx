@@ -325,7 +325,7 @@ export default function DashboardPage() {
                   return (
                     <div
                       key={p.id}
-                      className="group relative flex items-center gap-5 p-5 rounded-[24px] border border-slate-50 dark:border-white/5 bg-white dark:bg-white/2 hover:shadow-xl hover:shadow-indigo-500/5 transition-all hover:-translate-y-1 text-left"
+                      className="group relative flex items-center gap-5 p-5 rounded-[24px] border border-slate-200 dark:border-white/10 bg-slate-50/80 dark:bg-slate-800/40 backdrop-blur-md hover:shadow-xl hover:shadow-indigo-500/10 transition-all hover:-translate-y-1 text-left"
                     >
                       <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center text-white font-black text-2xl shadow-lg transform group-hover:rotate-6 transition-transform", p.color || "bg-indigo-500")}>
                         {(p.name || "P")[0].toUpperCase()}

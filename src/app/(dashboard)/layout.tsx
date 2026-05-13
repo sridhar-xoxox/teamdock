@@ -51,8 +51,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="flex flex-1 flex-col overflow-hidden relative z-10 w-full">
         {/* Mobile Header */}
         <header className="flex h-16 items-center justify-between border-b border-slate-200 dark:border-white/10 bg-white/80 dark:bg-[#0d1117]/80 px-4 backdrop-blur-xl lg:hidden shrink-0 transition-colors">
-          <div className="flex items-center gap-2.5 text-slate-900 dark:text-white">
-            <Logo className="h-8 w-8" />
+          <div className="flex items-center gap-2.5 text-slate-950 dark:text-white">
+            <Logo className="h-8 w-8 text-indigo-600 dark:text-white" />
             <span className="text-xl font-bold tracking-tight">
               teamdock
             </span>
