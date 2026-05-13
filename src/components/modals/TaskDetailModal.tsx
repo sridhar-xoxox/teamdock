@@ -82,15 +82,15 @@ export default function TaskDetailModal({ task: initialTask, onClose }: Props) {
         <div className="flex-1 overflow-y-auto custom-scrollbar bg-white dark:bg-[#0d1117]">
           
           {/* Email Subject Line */}
-          <div className="px-16 pt-8 pb-4">
+          <div className="px-6 sm:px-16 pt-8 pb-4">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1">
-                <div className="flex items-center gap-2 mb-4">
-                  <h1 className="text-2xl font-normal text-slate-900 dark:text-slate-100">
+                <div className="flex flex-wrap items-center gap-2 mb-4">
+                  <h1 className="text-xl sm:text-2xl font-normal text-slate-900 dark:text-slate-100 min-w-0 break-words">
                     {task.title}
                   </h1>
                   <div className={cn(
-                    "px-1.5 py-0.5 rounded text-[10px] font-bold uppercase",
+                    "px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-bold uppercase shrink-0",
                     isHigh ? "bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400" : "bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-slate-400"
                   )}>
                     {task.priority}
@@ -128,18 +128,18 @@ export default function TaskDetailModal({ task: initialTask, onClose }: Props) {
           </div>
 
           {/* Sender / Assignee Info Row */}
-          <div className="px-16 py-4 flex items-start gap-4">
+          <div className="px-6 sm:px-16 py-4 flex items-start gap-4">
             <div className="h-10 w-10 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0" style={{ backgroundColor: assignee?.color || '#6366f1' }}>
               {assignee?.initials || 'U'}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-sm">
-                  <span className="font-bold text-slate-900 dark:text-slate-100">{assignee?.name || 'Unassigned'}</span>
-                  <span className="text-slate-500 text-xs font-normal">&lt;{assignee?.email || 'noreply@teamdock.com'}&gt;</span>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-1.5 text-sm">
+                  <span className="font-bold text-slate-900 dark:text-slate-100 truncate">{assignee?.name || 'Unassigned'}</span>
+                  <span className="text-slate-500 text-[11px] sm:text-xs font-normal truncate">&lt;{assignee?.email || 'noreply@teamdock.com'}&gt;</span>
                 </div>
-                <div className="flex items-center gap-3 text-xs text-slate-500 font-normal">
-                  <span>{task.createdAt ? new Date(task.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''}</span>
+                <div className="flex items-center justify-between sm:justify-end gap-3 text-[10px] sm:text-xs text-slate-500 font-normal">
+                  <span className="shrink-0">{task.createdAt ? new Date(task.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''}</span>
                   <div className="flex items-center gap-1">
                     <button className="p-1 hover:bg-slate-100 dark:hover:bg-white/5 rounded"><Reply className="h-4 w-4" /></button>
                     <button className="p-1 hover:bg-slate-100 dark:hover:bg-white/5 rounded"><MoreVertical className="h-4 w-4" /></button>
@@ -151,13 +151,13 @@ export default function TaskDetailModal({ task: initialTask, onClose }: Props) {
           </div>
 
           {/* Email Body / Task Description */}
-          <div className="px-24 py-8 text-sm text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-wrap font-sans">
+          <div className="px-6 sm:px-24 py-8 text-sm text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-wrap font-sans">
             {task.description || 'No detailed instructions provided for this objective.'}
           </div>
 
           {/* Visual Attachments Section - NO CROP PREVIEW */}
           {task.attachments && task.attachments.length > 0 && (
-            <div className="px-24 py-8 border-t border-slate-100 dark:border-white/5">
+            <div className="px-6 sm:px-24 py-8 border-t border-slate-100 dark:border-white/5">
               <div className="flex items-center gap-2 mb-6 text-slate-500">
                 <Paperclip className="h-4 w-4" />
                 <span className="text-xs font-bold uppercase tracking-wider">Attachments ({task.attachments.length})</span>
@@ -182,7 +182,7 @@ export default function TaskDetailModal({ task: initialTask, onClose }: Props) {
           )}
 
           {/* Email Thread / Update Board */}
-          <div className="px-24 py-8 border-t border-slate-100 dark:border-white/5">
+          <div className="px-6 sm:px-24 py-8 border-t border-slate-100 dark:border-white/5">
             <div className="flex items-center gap-2 mb-8 text-slate-500">
               <MessageSquare className="h-4 w-4" />
               <span className="text-xs font-bold uppercase tracking-wider">Updates ({task.comments?.length || 0})</span>
@@ -212,7 +212,7 @@ export default function TaskDetailModal({ task: initialTask, onClose }: Props) {
           </div>
 
           {/* Reply Area */}
-          <div className="px-24 py-12">
+          <div className="px-6 sm:px-24 py-12">
             {!message && (
               <div className="flex gap-4">
                 <button 
