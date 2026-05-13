@@ -192,13 +192,13 @@ export default function DashboardPage() {
         </div>
 
         {/* Grid Layout */}
-        <div className="grid grid-cols-12 gap-10">
+        <div className="grid grid-cols-12 gap-6 md:gap-10">
           
           {/* Left Column (Assigned Tasks & People) */}
           <div className="col-span-12 lg:col-span-6 space-y-10">
             
-            {/* Assigned Tasks Card */}
-            <div className="p-5 md:p-7 rounded-[32px] bg-white dark:bg-[#1a1f2e] border border-slate-100 dark:border-white/5 shadow-sm">
+            {/* Assigned Tasks Card - Hidden on Mobile */}
+            <div className="hidden md:block p-5 md:p-7 rounded-[32px] bg-white dark:bg-[#1a1f2e] border border-slate-100 dark:border-white/5 shadow-sm">
               <SectionHeader title="Assigned Tasks">
                 <div className="flex items-center gap-3">
                   <div className="hidden xs:flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-100 dark:border-white/5 text-[11px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-wider bg-slate-50/50 dark:bg-white/5">
@@ -231,8 +231,8 @@ export default function DashboardPage() {
                       <Eye className="h-5 w-5" />
                     </button>
                   </div>
-                )) : (
-                  <div className="py-12 text-center text-slate-400 dark:text-slate-600 font-medium border-2 border-dashed border-slate-100 dark:border-white/5 rounded-3xl">
+                ) : (
+                  <div className="py-8 md:py-12 text-center text-slate-400 dark:text-slate-600 font-medium border-2 border-dashed border-slate-100 dark:border-white/5 rounded-3xl">
                     No tasks assigned to you yet
                   </div>
                 )}
@@ -243,8 +243,8 @@ export default function DashboardPage() {
               </Link>
             </div>
 
-            {/* People Section Card */}
-            <div className="p-7 rounded-[32px] bg-white dark:bg-[#1a1f2e] border border-slate-100 dark:border-white/5 shadow-sm">
+            {/* People Section Card - Hidden on Mobile */}
+            <div className="hidden md:block p-5 md:p-7 rounded-[32px] bg-white dark:bg-[#1a1f2e] border border-slate-100 dark:border-white/5 shadow-sm">
               <SectionHeader title="People" count={displayPeople.length}>
                 <button className="p-2 rounded-xl bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 hover:scale-105 active:scale-95 transition-all">
                   <Plus className="h-5 w-5" />
@@ -269,7 +269,7 @@ export default function DashboardPage() {
           <div className="col-span-12 lg:col-span-6 space-y-10">
             
             {/* Projects Section Card */}
-            <div className="p-7 rounded-[32px] bg-white dark:bg-[#1a1f2e] border border-slate-100 dark:border-white/5 shadow-sm">
+            <div className="p-5 md:p-7 rounded-[32px] bg-white dark:bg-[#1a1f2e] border border-slate-100 dark:border-white/5 shadow-sm">
               <SectionHeader title="Projects" count={filteredProjects.length}>
                 {isAdmin && (
                   <button
