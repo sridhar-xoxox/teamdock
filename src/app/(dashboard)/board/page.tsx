@@ -231,7 +231,7 @@ export default function DashboardPage() {
                       <Eye className="h-5 w-5" />
                     </button>
                   </div>
-                ) : (
+                )) : (
                   <div className="py-8 md:py-12 text-center text-slate-400 dark:text-slate-600 font-medium border-2 border-dashed border-slate-100 dark:border-white/5 rounded-3xl">
                     No tasks assigned to you yet
                   </div>
