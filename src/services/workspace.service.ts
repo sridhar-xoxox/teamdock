@@ -7,7 +7,7 @@ export const workspaceService = {
     // 1. Create workspace
     const { data: workspace, error: wsError } = await supabase
       .from('workspaces')
-      .insert({ name, owner_id: userId })
+      .insert({ name, owner_id: userId } as any)
       .select()
       .single();
     
@@ -17,10 +17,10 @@ export const workspaceService = {
     const { error: memberError } = await supabase
       .from('workspace_members')
       .insert({
-        workspace_id: workspace.id,
+        workspace_id: (workspace as any).id,
         user_id: userId,
         role: 'admin'
-      });
+      } as any);
     
     if (memberError) throw memberError;
 
@@ -34,7 +34,7 @@ export const workspaceService = {
       .eq('user_id', userId);
     
     if (error) throw error;
-    return data.map(d => d.workspace);
+    return (data as any[])?.map(d => d.workspace) || [];
   },
 
   async getMembers(workspaceId: string) {

@@ -21,7 +21,7 @@ export const taskService = {
   async addTask(task: NewTask) {
     const { data, error } = await supabase
       .from('tasks')
-      .insert(task)
+      .insert(task as any)
       .select()
       .single();
     
@@ -30,8 +30,8 @@ export const taskService = {
   },
 
   async updateTask(id: string, updates: Partial<Task>) {
-    const { data, error } = await supabase
-      .from('tasks')
+    const { data, error } = await (supabase
+      .from('tasks') as any)
       .update(updates)
       .eq('id', id)
       .select()
