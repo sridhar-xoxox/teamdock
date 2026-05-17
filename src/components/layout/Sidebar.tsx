@@ -18,7 +18,7 @@ export default function Sidebar() {
   const path = usePathname();
   const {
     tasks, activeWorkspace, currentUser,
-    projects, addProject, deleteProject
+    projects, addProject, deleteProject, logoutSession
   } = useStore();
 
   const isAdmin = currentUser?.role?.toLowerCase() === "admin";
@@ -155,9 +155,12 @@ export default function Sidebar() {
         )}>
           <Settings className="h-4 w-4" /> Settings
         </Link>
-        <Link href="/login" className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-red-500 hover:bg-red-500/10 transition-colors">
+        <button 
+          onClick={() => currentUser && logoutSession(currentUser.id)}
+          className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-red-500 hover:bg-red-500/10 transition-colors text-left focus:outline-none"
+        >
           <LogOut className="h-4 w-4" /> Sign Out
-        </Link>
+        </button>
       </div>
     </aside>
   );

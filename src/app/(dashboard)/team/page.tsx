@@ -167,8 +167,11 @@ export default function TeamPage() {
 
                 <div className="flex items-center gap-4 w-full sm:w-64 shrink-0">
                   <div
-                    className="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center text-xs sm:text-sm font-black text-white shadow-xl group-hover:scale-110 transition-transform duration-500 relative overflow-hidden shrink-0"
-                    style={{ backgroundColor: member.color }}
+                    className={cn(
+                      "h-10 w-10 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center text-xs sm:text-sm font-black text-white shadow-xl group-hover:scale-110 transition-transform duration-500 relative overflow-hidden shrink-0 apple-bubble",
+                      !member.color?.startsWith('#') && (member.color || "bg-indigo-600")
+                    )}
+                    style={{ backgroundColor: member.color?.startsWith('#') ? member.color : undefined }}
                   >
                     <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent" />
                     {member.initials}
@@ -235,23 +238,31 @@ export default function TeamPage() {
           })}
 
           {displayInvites.map((invite) => (
-            <div key={invite.email} className="group relative flex items-center gap-6 px-8 py-5 rounded-[1.25rem] border border-dashed border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-white/[0.01] hover:bg-slate-100 transition-all duration-300">
-              <div className="w-64 shrink-0">
+            <div key={invite.email} className="group relative flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 px-6 sm:px-8 py-5 rounded-[1.25rem] border border-dashed border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-white/[0.01] hover:bg-slate-100 dark:hover:bg-white/5 transition-all duration-300">
+              {/* Personnel Status Label */}
+              <div className="w-full sm:w-48 shrink-0 flex items-center justify-between sm:justify-start gap-3">
                 <span className="text-sm font-black text-slate-400 italic">Personnel Incoming...</span>
-              </div>
-              <div className="flex-1 flex items-center gap-4">
-                <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-slate-100 text-slate-400 dark:bg-white/5">
+                <span className="sm:hidden px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
                   {invite.role}
                 </span>
-                <span className="text-xs text-slate-400 font-medium italic truncate">
-                  Awaiting confirmation from {invite.email}
+              </div>
+              
+              {/* Awaiting Status Details */}
+              <div className="flex-1 flex flex-col xs:flex-row xs:items-center gap-2 sm:gap-4 min-w-0">
+                <span className="hidden sm:inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-slate-100 text-slate-400 dark:bg-white/5 shrink-0">
+                  {invite.role}
+                </span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium italic truncate">
+                  Awaiting confirmation from <span className="font-bold text-slate-700 dark:text-slate-300 not-italic">{invite.email}</span>
                 </span>
               </div>
-              <div className="flex items-center gap-4 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+
+              {/* Abort Recruitment Action Button */}
+              <div className="flex items-center sm:justify-end gap-4 shrink-0 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-300 w-full sm:w-auto mt-2 sm:mt-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-white/5">
                 {isAdmin && (
                   <button
                     onClick={() => removeInvite(invite.email)}
-                    className="bg-red-500/10 hover:bg-red-500 text-red-600 hover:text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                    className="bg-rose-500/10 hover:bg-rose-600 text-rose-600 hover:text-white px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all w-full sm:w-auto text-center cursor-pointer active:scale-[0.98]"
                   >
                     Abort Recruitment
                   </button>

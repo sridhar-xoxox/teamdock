@@ -8,20 +8,26 @@ export const authService = {
       email,
       password,
       options: {
-        data: {
-          full_name: fullName,
-        },
+        data: { full_name: fullName },
       },
     });
     if (error) throw error;
+
+    // Manually upsert the profile immediately after signup
+    // because the DB trigger may have a slight delay
+    if (data.user) {
+      await (supabase.from('profiles') as any).upsert({
+        id: data.user.id,
+        email: email,
+        full_name: fullName,
+      }, { onConflict: 'id' });
+    }
+
     return data;
   },
 
   async signIn(email: string, password: string) {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
     return data;
   },
@@ -32,8 +38,7 @@ export const authService = {
   },
 
   async getCurrentUser() {
-    const { data: { user }, error } = await supabase.auth.getUser();
-    if (error) return null;
+    const { data: { user } } = await supabase.auth.getUser();
     return user;
   },
 
@@ -42,8 +47,18 @@ export const authService = {
       .from('profiles')
       .select('*')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
     if (error) throw error;
     return data;
+  },
+
+  async ensureProfile(userId: string, email: string, fullName: string) {
+    const { data, error } = await (supabase.from('profiles') as any).upsert({
+      id: userId,
+      email,
+      full_name: fullName,
+    }, { onConflict: 'id' }).select().maybeSingle();
+    if (error) throw error;
+    return data as any;
   }
 };

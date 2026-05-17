@@ -7,18 +7,18 @@
 /* ── Design tokens ─────────────────────────────────────────── */
 :root {
   --bg-primary:   #ffffff;
-  --bg-secondary: #f8fafc;
+  --bg-secondary: #f2f2f7; /* Apple Grouped Background */
   --bg-card:      #ffffff;
-  --text-primary: #0f172a;
-  --border:       rgba(148,163,184,0.3);
+  --text-primary: #1c1c1e; /* Apple Primary Text Tones */
+  --border:       rgba(0, 0, 0, 0.08);
 }
 
 .dark {
-  --bg-primary:   #0a0f1e;
-  --bg-secondary: #0f172a;
-  --bg-card:      #111827;
-  --text-primary: #f1f5f9;
-  --border:       rgba(51,65,85,0.6);
+  --bg-primary:   #1c1c1e; /* Apple Dark Base Canvas */
+  --bg-secondary: #1c1c1e;
+  --bg-card:      #2c2c2e; /* Apple Dark Grouped Card Base */
+  --text-primary: #f2f2f7;
+  --border:       rgba(255, 255, 255, 0.08);
 }
 
 /* ── Base reset ────────────────────────────────────────────── */
@@ -49,5 +49,36 @@ body {
 /* ── Scrollbar ─────────────────────────────────────────────── */
 ::-webkit-scrollbar          { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track    { background: transparent; }
-::-webkit-scrollbar-thumb    { background: rgba(99,102,241,.35); border-radius: 9999px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,.6); }
+::-webkit-scrollbar-thumb    { background: rgba(36, 138, 84, 0.35); border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(36, 138, 84, 0.55); }
+
+/* ── Apple Glossy Bubble Effect ───────────────────────────── */
+.apple-bubble {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(0, 0, 0, 0.1) 100%) !important;
+}
+.apple-bubble::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0) 65%);
+  pointer-events: none;
+}
+.apple-bubble::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  pointer-events: none;
+}
+.apple-bubble:hover {
+  transform: scale(1.1) translateY(-2px) !important;
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15), 0 5px 15px rgba(255, 255, 255, 0.15) inset !important;
+}
+.dark .apple-bubble:hover {
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4), 0 5px 15px rgba(255, 255, 255, 0.05) inset !important;
+}

@@ -13,7 +13,7 @@ export const taskService = {
       .select('*')
       .eq('workspace_id', workspaceId)
       .order('created_at', { ascending: false });
-    
+
     if (error) throw error;
     return data;
   },
@@ -24,7 +24,7 @@ export const taskService = {
       .insert(task as any)
       .select()
       .single();
-    
+
     if (error) throw error;
     return data;
   },
@@ -36,7 +36,7 @@ export const taskService = {
       .eq('id', id)
       .select()
       .single();
-    
+
     if (error) throw error;
     return data;
   },
@@ -46,7 +46,7 @@ export const taskService = {
       .from('tasks')
       .delete()
       .eq('id', id);
-    
+
     if (error) throw error;
   },
 

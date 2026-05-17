@@ -1,5 +1,24 @@
 "use client";
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { authService } from "@/services/auth.service";
+import { taskService } from "@/services/task.service";
+import { workspaceService } from "@/services/workspace.service";
+import { invitationService } from "@/services/invitation.service";
+
+export const getAvatarColor = (initials: string) => {
+  const colors = [
+    '#f97316', // Orange
+    '#10b981', // Emerald
+    '#db2777', // Pink
+    '#7c3aed', // Violet
+    '#0d9488', // Teal
+    '#ea580c', // Dark Orange
+    '#e11d48', // Rose
+    '#2563eb'  // Blue
+  ];
+  const charCode = (initials && initials.charCodeAt(0)) || 0;
+  return colors[charCode % colors.length];
+};
 
 export type Priority = "HIGH" | "MEDIUM" | "LOW";
 export type TaskStatus = "TODO" | "IN_PROGRESS" | "DONE";
@@ -33,7 +52,7 @@ export interface Task {
   workspaceId: string;
   projectId?: string;
   comments?: TaskComment[];
-  attachments?: string[]; // Array of base64 or URLs
+  attachments?: string[];
 }
 
 export interface Member {
@@ -46,6 +65,8 @@ export interface Invite {
   email: string;
   role: string;
   workspaceId: string;
+  id?: string;
+  workspace_id?: string;
 }
 
 interface Ctx {
@@ -57,17 +78,17 @@ interface Ctx {
   currentUser: Member | null;
   setCurrentUser: (user: Member | null) => void;
   switchSession: (id: string) => void;
-  logoutSession: (id: string) => void;
+  logoutSession: (id: string) => Promise<void>;
 
-  createWorkspace: (name: string, adminMember: Omit<Member, "workspaceId">) => void;
-  joinWorkspace: (invite: Invite, member: Omit<Member, "workspaceId">) => void;
+  createWorkspace: (name: string, adminMember: Omit<Member, "workspaceId">) => Promise<void>;
+  joinWorkspace: (invite: Invite, member: Omit<Member, "workspaceId">) => Promise<void>;
 
   addInvite: (email: string, role: string) => void;
   removeInvite: (email: string) => void;
-  addTask: (t: Omit<Task, "id" | "createdAt" | "updatedAt" | "workspaceId"> & { workspaceId?: string, projectId?: string }) => void;
-  updateTask: (id: string, u: Partial<Task>) => void;
-  deleteTask: (id: string) => void;
-  moveTask: (id: string, s: TaskStatus) => void;
+  addTask: (t: Omit<Task, "id" | "createdAt" | "updatedAt" | "workspaceId"> & { workspaceId?: string, projectId?: string }) => Promise<void>;
+  updateTask: (id: string, u: Partial<Task>) => Promise<void>;
+  deleteTask: (id: string) => Promise<void>;
+  moveTask: (id: string, s: TaskStatus) => Promise<void>;
 
   projects: Project[];
   addProject: (name: string, color?: string) => Project;
@@ -83,6 +104,7 @@ interface Ctx {
   addTaskComment: (taskId: string, memberId: string, text: string) => void;
   allTasks: Task[];
   allMembers: Member[];
+  loading: boolean;
 }
 
 const StoreCtx = createContext<Ctx | null>(null);
@@ -98,88 +120,161 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<Member | null>(null);
   const [theme, setTheme] = useState<"light" | "dark">("dark");
   const [mounted, setMounted] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Initialize from LocalStorage
+  // Initialize Auth and Sync Data
   useEffect(() => {
-    try {
-      const w = localStorage.getItem("qt_workspaces");
-      const s = localStorage.getItem("qt_tasks");
-      const m = localStorage.getItem("qt_members");
-      const i = localStorage.getItem("qt_invites");
-      const p = localStorage.getItem("qt_projects");
-      const sess = localStorage.getItem("qt_sessions");
-      const u = localStorage.getItem("qt_user");
+    const init = async () => {
+      try {
+        setLoading(true);
+        const user = await authService.getCurrentUser();
 
-      if (w) setWorkspaces(JSON.parse(w));
-      if (s) setAllTasks(JSON.parse(s));
-      if (m) setAllMembers(JSON.parse(m));
-      if (i) setAllInvites(JSON.parse(i));
-      if (p) setAllProjects(JSON.parse(p));
-      if (sess) setSessions(JSON.parse(sess));
-      if (u) setCurrentUser(JSON.parse(u));
+        if (user) {
+          // 1. Fetch profile — upsert as fallback so we never get stuck
+          let profile: any = null;
+          try {
+            profile = await authService.getProfile(user.id);
+            if (!profile) {
+              profile = await authService.ensureProfile(
+                user.id,
+                user.email ?? '',
+                user.user_metadata?.full_name ?? user.email ?? 'User'
+              );
+            }
+          } catch (pe) {
+            console.error('Profile fetch error:', pe);
+          }
 
-      // SEED SAMPLE DATA if empty
-      if (!w && !s && !m) {
-        const sampleWs = [
-          { id: "ws_1", name: "TeamDock Development" },
-          { id: "ws_2", name: "Marketing Campaign" }
-        ];
-        const sampleMembers = [
-          { id: "u_1", name: "Sridhar", initials: "S", email: "sridhar@example.com", role: "Admin", color: "bg-indigo-100", workspaceId: "ws_1" },
-          { id: "u_2", name: "Alice Smith", initials: "AS", email: "alice@example.com", role: "Member", color: "bg-emerald-100", workspaceId: "ws_1" },
-          { id: "u_3", name: "Bob Jones", initials: "BJ", email: "bob@example.com", role: "Member", color: "bg-orange-100", workspaceId: "ws_2" }
-        ];
-        const initialProjects: Project[] = [
-          { id: "p1", name: "Website Redesign", color: "bg-indigo-500", workspaceId: "ws_1", createdAt: new Date().toISOString() },
-          { id: "p2", name: "Mobile App", color: "bg-emerald-500", workspaceId: "ws_1", createdAt: new Date().toISOString() },
-          { id: "p3", name: "Marketing Q3", color: "bg-orange-500", workspaceId: "ws_1", createdAt: new Date().toISOString() },
-        ];
-        const sampleTasks: Task[] = [
-          { id: "t_1", title: "Redesign Dashboard UI", description: "Match the new modern dashboard design", priority: "HIGH", status: "IN_PROGRESS", isCompleted: false, dueDate: new Date(Date.now() + 86400000).toISOString(), assigneeId: "u_1", tags: ["UI", "Design"], workspaceId: "ws_1", projectId: "p1", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-          { id: "t_2", title: "Fix Authentication Bug", description: "Resolve session timeout issues", priority: "HIGH", status: "TODO", isCompleted: false, dueDate: new Date(Date.now() + 172800000).toISOString(), assigneeId: "u_2", tags: ["Bug", "Auth"], workspaceId: "ws_1", projectId: "p1", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-          { id: "t_3", title: "Draft Marketing Copy", description: "Prepare social media posts", priority: "MEDIUM", status: "DONE", isCompleted: true, dueDate: new Date(Date.now() - 86400000).toISOString(), assigneeId: "u_3", tags: ["Marketing"], workspaceId: "ws_2", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
-        ];
+          if (!profile) {
+            // Truly broken state — but let's try to proceed with minimal info
+            profile = { id: user.id, email: user.email, full_name: user.email?.split('@')[0] || 'User' };
+          }
 
-        setWorkspaces(sampleWs);
-        setAllMembers(sampleMembers);
-        setAllTasks(sampleTasks);
-        setAllProjects(initialProjects);
-        setSessions([sampleMembers[0]]);
-        setCurrentUser(sampleMembers[0]);
+          // 2. Fetch Workspaces
+          let userWorkspaces: any[] = [];
+          try {
+            userWorkspaces = await workspaceService.getWorkspaces(user.id);
+            setWorkspaces(userWorkspaces);
+          } catch (we) {
+            console.error('Workspace fetch error:', we);
+          }
 
-        localStorage.setItem("qt_workspaces", JSON.stringify(sampleWs));
-        localStorage.setItem("qt_members", JSON.stringify(sampleMembers));
-        localStorage.setItem("qt_tasks", JSON.stringify(sampleTasks));
-        localStorage.setItem("qt_projects", JSON.stringify(initialProjects));
-        localStorage.setItem("qt_sessions", JSON.stringify([sampleMembers[0]]));
-        localStorage.setItem("qt_user", JSON.stringify(sampleMembers[0]));
+          const hasWorkspaces = userWorkspaces.length > 0;
+          const firstWs = hasWorkspaces ? userWorkspaces[0] : null;
+          const firstWsId = firstWs?.id || '';
+
+          if (hasWorkspaces) {
+            // 3. Fetch Tasks (Resilient)
+            try {
+              const tasksData = await taskService.getTasks(firstWsId);
+              setAllTasks((tasksData as any[]).map((t: any) => ({
+                id: t.id,
+                title: t.title,
+                description: t.description || '',
+                priority: t.priority as Priority,
+                status: t.status as TaskStatus,
+                isCompleted: t.status === 'DONE',
+                dueDate: t.due_date || undefined,
+                assigneeId: t.assigned_to || undefined,
+                tags: [],
+                workspaceId: t.workspace_id,
+                createdAt: t.created_at,
+                updatedAt: t.created_at,
+                attachments: t.attachments || []
+              })));
+            } catch (te) {
+              console.error('Tasks fetch error:', te);
+            }
+
+            // 4. Fetch Members (Resilient)
+            let mappedMembers: Member[] = [];
+            try {
+              const membersData = await workspaceService.getMembers(firstWsId);
+              mappedMembers = (membersData as any[]).map((m: any) => {
+                const initials = (m.profiles?.full_name || 'U').split(' ').map((n: string) => n[0]).join('').toUpperCase();
+                return {
+                  id: m.user_id,
+                  name: m.profiles?.full_name || 'Unknown',
+                  email: m.profiles?.email || '',
+                  initials,
+                  role: (m.role.charAt(0).toUpperCase() + m.role.slice(1)) as 'Admin' | 'Manager' | 'Member',
+                  color: getAvatarColor(initials),
+                  workspaceId: m.workspace_id
+                };
+              });
+              setAllMembers(mappedMembers);
+            } catch (me) {
+              console.error('Members fetch error:', me);
+            }
+
+            // 5. Fetch Invites (Resilient)
+            try {
+              const invitesData = await invitationService.getInvites(firstWsId);
+              setAllInvites(invitesData.map((i: any) => ({
+                email: i.email,
+                role: i.role.charAt(0).toUpperCase() + i.role.slice(1),
+                workspaceId: i.workspace_id,
+                id: i.id
+              })));
+            } catch (ie) {
+              console.error('Invites fetch error:', ie);
+            }
+
+            // 6. Set Current User
+            const currentMember = mappedMembers.find(m => m.id === user.id);
+            if (currentMember) {
+              setCurrentUser(currentMember);
+              setSessions([currentMember]);
+            } else {
+              const fallbackName = profile?.full_name || user.email || 'User';
+              const fallbackEmail = profile?.email || user.email || '';
+              const initials = fallbackName.split(' ').map((n: string) => (n?.[0] || '')).join('').toUpperCase();
+              const fallbackMember: Member = {
+                id: user.id,
+                name: fallbackName,
+                email: fallbackEmail,
+                initials,
+                role: (firstWs as any)?.role || 'admin',
+                color: getAvatarColor(initials),
+                workspaceId: firstWsId
+              };
+              setCurrentUser(fallbackMember);
+              setSessions([fallbackMember]);
+            }
+          } else {
+            // No workspace — build a user object from profile so dashboard renders
+            const fallbackName = profile?.full_name || user.email || 'User';
+            const fallbackEmail = profile?.email || user.email || '';
+            const initials = fallbackName.split(' ').map((n: string) => (n?.[0] || '')).join('').toUpperCase();
+            const fallbackMember: Member = {
+              id: user.id,
+              name: fallbackName,
+              email: fallbackEmail,
+              initials,
+              role: 'admin',
+              color: getAvatarColor(initials),
+              workspaceId: ''
+            };
+            setCurrentUser(fallbackMember);
+            setSessions([fallbackMember]);
+          }
+        }
+
+        // Theme
+        const savedTheme = localStorage.getItem('qt_theme') as 'light' | 'dark' | null;
+        if (savedTheme) setTheme(savedTheme);
+        else setTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+
+      } catch (e) {
+        console.error('Global Store init error:', e);
+      } finally {
+        setLoading(false);
+        setMounted(true);
       }
-
-      // THEME INITIALIZATION
-      const savedTheme = localStorage.getItem("qt_theme") as "light" | "dark" | null;
-      if (savedTheme === "light" || savedTheme === "dark") {
-        setTheme(savedTheme);
-      } else {
-        const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-        setTheme(isDark ? "dark" : "light");
-      }
-    } catch (e) {
-      console.error("Storage Error", e);
-    }
-    setMounted(true);
+    };
+    init();
   }, []);
 
-  // System Theme Listener
-  useEffect(() => {
-    if (!mounted) return;
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    const handleSystemThemeChange = (e: MediaQueryListEvent) => {
-      const userPref = localStorage.getItem("qt_theme");
-      if (!userPref) setTheme(e.matches ? "dark" : "light");
-    };
-    mediaQuery.addEventListener("change", handleSystemThemeChange);
-    return () => mediaQuery.removeEventListener("change", handleSystemThemeChange);
-  }, [mounted]);
 
   // Apply Theme to DOM
   useEffect(() => {
@@ -188,19 +283,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     else document.documentElement.classList.remove("dark");
     localStorage.setItem("qt_theme", theme);
   }, [theme, mounted]);
-
-  // Sync state to LocalStorage
-  useEffect(() => {
-    if (!mounted) return;
-    localStorage.setItem("qt_workspaces", JSON.stringify(workspaces));
-    localStorage.setItem("qt_tasks", JSON.stringify(allTasks));
-    localStorage.setItem("qt_members", JSON.stringify(allMembers));
-    localStorage.setItem("qt_invites", JSON.stringify(allInvites));
-    localStorage.setItem("qt_projects", JSON.stringify(allProjects));
-    localStorage.setItem("qt_sessions", JSON.stringify(sessions));
-    if (currentUser) localStorage.setItem("qt_user", JSON.stringify(currentUser));
-    else localStorage.removeItem("qt_user");
-  }, [workspaces, allTasks, allMembers, allInvites, allProjects, sessions, currentUser, mounted]);
 
   const handleSetCurrentUser = (user: Member | null) => {
     setCurrentUser(user);
@@ -214,22 +296,58 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (user) setCurrentUser(user);
   };
 
-  const logoutSession = (id: string) => {
+  const logoutSession = async (id: string) => {
+    try {
+      await authService.signOut();
+    } catch (se) {
+      console.error("Supabase signOut error:", se);
+    }
     const newSessions = sessions.filter(s => s.id !== id);
     setSessions(newSessions);
-    if (currentUser?.id === id) setCurrentUser(newSessions.length > 0 ? newSessions[0] : null);
+    if (currentUser?.id === id) {
+      setCurrentUser(null);
+    }
+    // Hard refresh clear redirect
+    window.location.href = "/login";
   };
 
-  const createWorkspace = (name: string, adminMember: Omit<Member, "workspaceId">) => {
-    const workspaceId = `ws_${Date.now()}`;
-    setWorkspaces(p => [...p, { id: workspaceId, name }]);
-    const newMember = { ...adminMember, workspaceId };
-    setAllMembers(p => [...p, newMember]);
-    handleSetCurrentUser(newMember);
+  const createWorkspace = async (name: string, adminMember: Omit<Member, "workspaceId">) => {
+    if (!currentUser) return;
+    try {
+      const workspace = await workspaceService.createWorkspace(name, currentUser.id) as any;
+      setWorkspaces(p => [...p, workspace]);
+      const newMember = { ...adminMember, workspaceId: workspace.id };
+      setAllMembers(p => [...p, newMember]);
+      handleSetCurrentUser(newMember);
+    } catch (e) {
+      console.error("Create Workspace Error", e);
+    }
   };
 
-  const joinWorkspace = (invite: Invite, member: Omit<Member, "workspaceId">) => {
-    const newMember = { ...member, workspaceId: invite.workspaceId, role: invite.role };
+  const joinWorkspace = async (invite: Invite, member: Omit<Member, "workspaceId">) => {
+    const wsId = invite.workspaceId || invite.workspace_id;
+    if (!wsId) throw new Error("workspaceId is required");
+
+    let inviteId = invite.id;
+    if (!inviteId) {
+      // Fetch invite id if missing
+      const pending = await invitationService.getPendingInvite(invite.email);
+      if (pending) {
+        inviteId = pending.id;
+      }
+    }
+
+    if (inviteId) {
+      await invitationService.acceptInvite(
+        inviteId, 
+        wsId, 
+        member.id, 
+        invite.role.toLowerCase(), 
+        invite.email
+      );
+    }
+    
+    const newMember = { ...member, workspaceId: wsId, role: invite.role };
     setAllMembers(p => [...p, newMember]);
     setAllInvites(p => p.filter(i => i.email !== invite.email));
     handleSetCurrentUser(newMember);
@@ -243,35 +361,111 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const invites = allInvites.filter(i => i.workspaceId === currentWorkspaceId);
   const projects = allProjects.filter(p => p.workspaceId === currentWorkspaceId);
 
-  const addInvite = (email: string, role: string) => {
-    if (!currentWorkspaceId) return;
-    setAllInvites(p => [...p, { email, role, workspaceId: currentWorkspaceId }]);
+  const addInvite = async (email: string, role: string) => {
+    if (!currentWorkspaceId || !currentUser) return;
+    try {
+      const inv = await invitationService.createInvite(currentWorkspaceId, email, role, currentUser.id);
+      setAllInvites(p => [
+        ...p.filter(i => !(i.email === email && i.workspaceId === currentWorkspaceId)),
+        { email: inv.email, role: inv.role, workspaceId: inv.workspace_id, id: inv.id }
+      ]);
+    } catch (e: any) {
+      console.error('Add invite error:', e.message);
+    }
   };
 
-  const removeInvite = (email: string) => {
+  const removeInvite = async (email: string) => {
     if (!currentWorkspaceId) return;
-    setAllInvites(p => p.filter(i => !(i.email === email && i.workspaceId === currentWorkspaceId)));
+    try {
+      await invitationService.deleteInvite(currentWorkspaceId, email);
+      setAllInvites(p => p.filter(i => !(i.email === email && i.workspaceId === currentWorkspaceId)));
+    } catch (e: any) {
+      console.error('Remove invite error:', e.message);
+      // Still remove from local state
+      setAllInvites(p => p.filter(i => !(i.email === email && i.workspaceId === currentWorkspaceId)));
+    }
   };
 
-  const addTask = (t: Omit<Task, "id" | "createdAt" | "updatedAt" | "workspaceId"> & { workspaceId?: string, projectId?: string }) => {
+  const addTask = async (t: Omit<Task, "id" | "createdAt" | "updatedAt" | "workspaceId"> & { workspaceId?: string, projectId?: string }) => {
     const targetWsId = t.workspaceId || currentWorkspaceId;
-    if (!targetWsId) return;
-    setAllTasks(p => [{ ...t, id: `t${Date.now()}`, workspaceId: targetWsId, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }, ...p]);
+    if (!targetWsId || !currentUser) return;
+
+    try {
+      const newTask = await taskService.addTask({
+        title: t.title,
+        description: t.description,
+        priority: t.priority,
+        status: t.status,
+        workspace_id: targetWsId,
+        assigned_to: t.assigneeId || null,
+        created_by: currentUser.id,
+        due_date: t.dueDate || null,
+        attachments: t.attachments || null
+      }) as any;
+
+      const mappedTask: Task = {
+        id: newTask.id,
+        title: newTask.title,
+        description: newTask.description || "",
+        priority: newTask.priority as Priority,
+        status: newTask.status as TaskStatus,
+        isCompleted: newTask.status === "DONE",
+        dueDate: newTask.due_date || undefined,
+        assigneeId: newTask.assigned_to || undefined,
+        tags: [],
+        workspaceId: newTask.workspace_id,
+        createdAt: newTask.created_at,
+        updatedAt: newTask.created_at,
+        attachments: newTask.attachments || []
+      };
+
+      setAllTasks(p => [mappedTask, ...p]);
+    } catch (e) {
+      console.error("Add Task Error", e);
+    }
   };
 
-  const updateTask = (id: string, u: Partial<Task>) =>
-    setAllTasks(p => p.map(t => t.id === id ? { ...t, ...u, updatedAt: new Date().toISOString() } : t));
+  const updateTask = async (id: string, u: Partial<Task>) => {
+    try {
+      const updates: any = {};
+      if (u.title !== undefined) updates.title = u.title;
+      if (u.description !== undefined) updates.description = u.description;
+      if (u.priority !== undefined) updates.priority = u.priority;
+      if (u.status !== undefined) updates.status = u.status;
+      if (u.dueDate !== undefined) updates.due_date = u.dueDate;
+      if (u.assigneeId !== undefined) updates.assigned_to = u.assigneeId;
+      if (u.isCompleted !== undefined) updates.status = u.isCompleted ? "DONE" : "TODO";
 
-  const deleteTask = (id: string) => setAllTasks(p => p.filter(t => t.id !== id));
+      await taskService.updateTask(id, updates);
+      setAllTasks(p => p.map(t => t.id === id ? { ...t, ...u, updatedAt: new Date().toISOString() } : t));
+    } catch (e) {
+      console.error("Update Task Error", e);
+    }
+  };
 
-  const moveTask = (id: string, s: TaskStatus) =>
-    setAllTasks(p => p.map(t => t.id === id ? { ...t, status: s, isCompleted: s === "DONE", updatedAt: new Date().toISOString() } : t));
+  const deleteTask = async (id: string) => {
+    try {
+      await taskService.deleteTask(id);
+      setAllTasks(p => p.filter(t => t.id !== id));
+    } catch (e) {
+      console.error("Delete Task Error", e);
+    }
+  };
+
+  const moveTask = async (id: string, s: TaskStatus) => {
+    try {
+      await taskService.updateTask(id, { status: s });
+      setAllTasks(p => p.map(t => t.id === id ? { ...t, status: s, isCompleted: s === "DONE", updatedAt: new Date().toISOString() } : t));
+    } catch (e) {
+      console.error("Move Task Error", e);
+    }
+  };
 
   const addProject = (name: string, color?: string) => {
     const p: Project = {
       id: `p${Date.now()}`,
       name,
-      color: color || ["bg-indigo-500", "bg-emerald-500", "bg-orange-500", "bg-pink-500", "bg-violet-500", "bg-cyan-500", "bg-amber-500", "bg-rose-500"][Math.floor(Math.random() * 8)],
+      color: color || ["bg-black dark:bg-white text-white dark:text-black", "bg-emerald-500", "bg-orange-500", "bg-pink-500", "bg-violet-500", "bg-cyan-500", "bg-amber-500", "bg-rose-500"][Math.floor(Math.random() * 8)],
       workspaceId: currentWorkspaceId || "",
       createdAt: new Date().toISOString()
     };
@@ -313,7 +507,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       projects, addProject, deleteProject,
       theme, toggleTheme,
       getMemberByEmail, getInviteByEmail, updateMemberRole, addTaskComment,
-      allTasks, allMembers
+      allTasks, allMembers, loading
     }}> {children} </StoreCtx.Provider>
   );
 }

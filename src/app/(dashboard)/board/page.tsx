@@ -254,7 +254,14 @@ export default function DashboardPage() {
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
                 {displayPeople.map((m: any) => (
                   <div key={m.id} className="group p-5 rounded-3xl border border-slate-50 dark:border-white/5 hover:bg-slate-50/50 dark:hover:bg-white/5 hover:border-indigo-500/20 transition-all text-center">
-                    <div className={cn("w-14 h-14 rounded-full mx-auto mb-4 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-black text-lg shadow-inner", m.color || "bg-slate-100 dark:bg-white/5")}>
+                    <div
+                      className={cn(
+                        "w-14 h-14 rounded-full mx-auto mb-4 flex items-center justify-center font-black text-lg shadow-inner apple-bubble",
+                        !m.color?.startsWith('#') && (m.color || "bg-slate-100 dark:bg-white/5"),
+                        m.color?.startsWith('#') ? "text-white" : "text-indigo-600 dark:text-indigo-400"
+                      )}
+                      style={{ backgroundColor: m.color?.startsWith('#') ? m.color : undefined }}
+                    >
                       {m.initials || m.name.split(' ').map((n:string)=>n[0]).join('').toUpperCase()}
                     </div>
                     <h5 className="font-bold text-slate-900 dark:text-white text-sm tracking-tight mb-1">{m.name}</h5>

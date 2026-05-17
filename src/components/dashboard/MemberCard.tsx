@@ -1,5 +1,5 @@
 "use client";
-import { Mail, Shield, MoreHorizontal } from "lucide-react";
+import { Mail, Shield } from "lucide-react";
 import { Member, Task } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
@@ -22,19 +22,18 @@ export function MemberCard({ member, tasks, isCurrentUser }: MemberCardProps) {
         style={{ backgroundColor: member.color }}
       />
 
-      <div className="absolute right-6 top-6">
-        <button className="p-2 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white transition-all">
-          <MoreHorizontal className="h-5 w-5" />
-        </button>
-      </div>
+
 
       <div className="flex items-center gap-6 mb-8">
         <div className="relative">
           <span
-            className="flex h-20 w-20 items-center justify-center rounded-[2rem] text-2xl font-black text-white shadow-2xl transition-transform duration-500 group-hover:scale-110"
+            className={cn(
+              "flex h-20 w-20 items-center justify-center rounded-[2rem] text-2xl font-black text-white shadow-2xl transition-transform duration-500 group-hover:scale-110 apple-bubble",
+              !member.color?.startsWith('#') && (member.color || "bg-indigo-600")
+            )}
             style={{ 
-              backgroundColor: member.color,
-              boxShadow: `0 20px 40px -12px ${member.color}66`
+              backgroundColor: member.color?.startsWith('#') ? member.color : undefined,
+              boxShadow: member.color?.startsWith('#') ? `0 20px 40px -12px ${member.color}66` : undefined
             }}
           >
             {member.initials}

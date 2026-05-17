@@ -95,7 +95,7 @@ export default function SettingsPage() {
                 "mb-6 p-4 rounded-xl text-sm font-medium flex items-center gap-3 animate-in fade-in slide-in-from-top-2",
                 status.type === 'success' ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" : "bg-red-500/10 text-red-500 border border-red-500/20"
               )}>
-                {status.type === 'success' ? <CheckCircle2 className="h-4 w-4" /> : <Shield className="h-4 w-4" />}
+                {status.type === 'success' && <CheckCircle2 className="h-4 w-4" />}
                 {status.message}
               </div>
             )}
@@ -106,8 +106,11 @@ export default function SettingsPage() {
                   <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mb-6">Profile Information</h3>
                   <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 text-center sm:text-left">
                     <div 
-                      className="h-20 w-20 rounded-full flex items-center justify-center text-2xl font-bold text-white shadow-xl shrink-0"
-                      style={{ backgroundColor: currentUser?.color || "#6366f1" }}
+                      className={cn(
+                        "h-20 w-20 rounded-full flex items-center justify-center text-2xl font-bold text-white shadow-xl shrink-0 apple-bubble",
+                        !currentUser?.color?.startsWith('#') && (currentUser?.color || "bg-indigo-600")
+                      )}
+                      style={{ backgroundColor: currentUser?.color?.startsWith('#') ? currentUser.color : undefined }}
                     >
                       {currentUser?.initials}
                     </div>

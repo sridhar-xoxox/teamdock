@@ -129,7 +129,13 @@ export default function TaskDetailModal({ task: initialTask, onClose }: Props) {
 
           {/* Sender / Assignee Info Row */}
           <div className="px-6 sm:px-16 py-4 flex items-start gap-4">
-            <div className="h-10 w-10 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0" style={{ backgroundColor: assignee?.color || '#6366f1' }}>
+            <div 
+              className={cn(
+                "h-10 w-10 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0 apple-bubble",
+                !assignee?.color?.startsWith('#') && (assignee?.color || "bg-indigo-600")
+              )} 
+              style={{ backgroundColor: assignee?.color?.startsWith('#') ? assignee.color : undefined }}
+            >
               {assignee?.initials || 'U'}
             </div>
             <div className="flex-1 min-w-0">
@@ -193,7 +199,13 @@ export default function TaskDetailModal({ task: initialTask, onClose }: Props) {
                 const commenter = getCommenter(comment.memberId);
                 return (
                   <div key={comment.id} className="flex gap-4 group">
-                    <div className="h-8 w-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0 mt-1" style={{ backgroundColor: commenter?.color || '#6366f1' }}>
+                    <div 
+                      className={cn(
+                        "h-8 w-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0 mt-1 apple-bubble",
+                        !commenter?.color?.startsWith('#') && (commenter?.color || "bg-indigo-600")
+                      )} 
+                      style={{ backgroundColor: commenter?.color?.startsWith('#') ? commenter.color : undefined }}
+                    >
                       {commenter?.initials}
                     </div>
                     <div className="flex-1">
