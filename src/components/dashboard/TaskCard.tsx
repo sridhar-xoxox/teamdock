@@ -80,71 +80,8 @@ function isOverdue(date: string | Date): boolean {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Dropdown Menu
+// Dropdown Menu (Removed)
 // ─────────────────────────────────────────────────────────────────────────────
-
-interface DropdownMenuProps {
-  onEdit: () => void;
-  onDelete: () => void;
-  onClose: () => void;
-}
-
-function DropdownMenu({ onEdit, onDelete, onClose }: DropdownMenuProps) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        onClose();
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [onClose]);
-
-  return (
-    <div
-      ref={ref}
-      role="menu"
-      className={cn(
-        "absolute right-0 top-8 z-50 w-40 origin-top-right rounded-xl",
-        "bg-white dark:bg-slate-800",
-        "border border-slate-200 dark:border-slate-700",
-        "shadow-xl shadow-slate-900/10 dark:shadow-black/40",
-        "animate-in fade-in zoom-in-95 duration-150"
-      )}
-    >
-      <button
-        role="menuitem"
-        onClick={() => { onEdit(); onClose(); }}
-        className={cn(
-          "flex w-full items-center gap-2.5 px-3.5 py-2.5 text-sm font-medium",
-          "text-slate-700 dark:text-slate-300",
-          "hover:bg-indigo-50 dark:hover:bg-indigo-950/40",
-          "hover:text-indigo-700 dark:hover:text-indigo-300",
-          "rounded-t-xl transition-colors duration-150"
-        )}
-      >
-        <Pencil className="h-3.5 w-3.5" />
-        Edit task
-      </button>
-      <div className="mx-3 h-px bg-slate-100 dark:bg-slate-700" />
-      <button
-        role="menuitem"
-        onClick={() => { onDelete(); onClose(); }}
-        className={cn(
-          "flex w-full items-center gap-2.5 px-3.5 py-2.5 text-sm font-medium",
-          "text-red-600 dark:text-red-400",
-          "hover:bg-red-50 dark:hover:bg-red-950/30",
-          "rounded-b-xl transition-colors duration-150"
-        )}
-      >
-        <Trash2 className="h-3.5 w-3.5" />
-        Delete task
-      </button>
-    </div>
-  );
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TaskCard
@@ -164,7 +101,6 @@ export function TaskCard({
   onEdit,
   onDelete,
 }: TaskCardProps) {
-  const [menuOpen, setMenuOpen] = useState(false);
   const { label, icon: PriorityIcon, classes } = priorityConfig[priority];
   const overdue = dueDate && !isCompleted && isOverdue(dueDate);
 
@@ -218,31 +154,20 @@ export function TaskCard({
           )}
         </div>
 
-        {/* ··· Menu */}
+        {/* Delete Button */}
         <div className="relative shrink-0">
           <button
-            id={`task-menu-${id}`}
-            aria-label="Task options"
-            aria-haspopup="true"
-            aria-expanded={menuOpen}
-            onClick={() => setMenuOpen((v) => !v)}
+            aria-label="Delete task"
+            onClick={() => onDelete(id)}
             className={cn(
               "rounded-lg p-1.5 transition-colors duration-150",
               "text-slate-400 opacity-0 group-hover:opacity-100",
-              "hover:bg-slate-100 hover:text-slate-700",
-              "dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-300",
-              menuOpen && "opacity-100 bg-slate-100 dark:bg-slate-800"
+              "hover:bg-red-50 hover:text-red-600",
+              "dark:text-slate-500 dark:hover:bg-red-950/30 dark:hover:text-red-400"
             )}
           >
-            <MoreHorizontal className="h-4 w-4" />
+            <Trash2 className="h-4 w-4" />
           </button>
-          {menuOpen && (
-            <DropdownMenu
-              onEdit={() => onEdit(id)}
-              onDelete={() => onDelete(id)}
-              onClose={() => setMenuOpen(false)}
-            />
-          )}
         </div>
       </div>
 
