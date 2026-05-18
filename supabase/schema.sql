@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS public.workspace_members (
   workspace_id uuid NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
   user_id      uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   role         text NOT NULL DEFAULT 'member' CHECK (role IN ('admin', 'manager', 'member')),
-  invited_by   uuid REFERENCES public.profiles(id),
+  invited_by   uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
   joined_at    timestamptz NOT NULL DEFAULT now(),
   UNIQUE (workspace_id, user_id)
 );
@@ -121,7 +121,7 @@ CREATE TABLE IF NOT EXISTS public.tasks (
   priority     text NOT NULL DEFAULT 'MEDIUM' CHECK (priority IN ('LOW', 'MEDIUM', 'HIGH')),
   status       text NOT NULL DEFAULT 'TODO'   CHECK (status IN ('TODO', 'IN_PROGRESS', 'DONE')),
   assigned_to  uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
-  created_by   uuid NOT NULL REFERENCES public.profiles(id),
+  created_by   uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
   due_date     date,
   attachments  text[],
   created_at   timestamptz NOT NULL DEFAULT now()
