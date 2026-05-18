@@ -101,6 +101,7 @@ interface Ctx {
   getMemberByEmail: (email: string) => Member | undefined;
   getInviteByEmail: (email: string) => Invite | undefined;
   updateMemberRole: (id: string, role: string) => void;
+  removeMember: (id: string) => Promise<void>;
   addTaskComment: (taskId: string, memberId: string, text: string) => void;
   allTasks: Task[];
   allMembers: Member[];
@@ -486,6 +487,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setSessions(p => p.map(s => s.id === id ? { ...s, role } : s));
   };
 
+  const removeMember = async (id: string) => {
+    if (!activeWorkspace) return;
+    try {
+      await workspaceService.removeMember(activeWorkspace.id, id);
+      setAllMembers(p => p.filter(m => m.id !== id));
+      setSessions(p => p.filter(s => s.id !== id));
+      setAllTasks(p => p.map(t => t.workspaceId === activeWorkspace.id && t.assigneeId === id ? { ...t, assigneeId: undefined } : t));
+    } catch (err) {
+      console.error("Failed to remove member", err);
+    }
+  };
+
   const addTaskComment = (taskId: string, memberId: string, text: string) => {
     const newComment: TaskComment = {
       id: `c${Date.now()}`,
@@ -506,7 +519,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       addTask, updateTask, deleteTask, moveTask,
       projects, addProject, deleteProject,
       theme, toggleTheme,
-      getMemberByEmail, getInviteByEmail, updateMemberRole, addTaskComment,
+      getMemberByEmail, getInviteByEmail, updateMemberRole, removeMember, addTaskComment,
       allTasks, allMembers, loading
     }}> {children} </StoreCtx.Provider>
   );

@@ -56,6 +56,18 @@ export const workspaceService = {
   },
 
   async removeMember(workspaceId: string, userId: string) {
+    // 1. Unassign all tasks assigned to this user in this workspace to satisfy database constraints
+    const { error: tasksError } = await (supabase.from('tasks') as any)
+      .update({ assigned_to: null })
+      .eq('workspace_id', workspaceId)
+      .eq('assigned_to', userId);
+      
+    if (tasksError) {
+      console.error("Failed to unassign tasks before member removal:", tasksError);
+      throw tasksError;
+    }
+
+    // 2. Remove the member
     const { error } = await supabase
       .from('workspace_members')
       .delete()
