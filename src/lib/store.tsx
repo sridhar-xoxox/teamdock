@@ -494,8 +494,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setAllMembers(p => p.filter(m => m.id !== id));
       setSessions(p => p.filter(s => s.id !== id));
       setAllTasks(p => p.map(t => t.workspaceId === activeWorkspace.id && t.assigneeId === id ? { ...t, assigneeId: undefined } : t));
-    } catch (err) {
-      console.error("Failed to remove member", err);
+    } catch (err: any) {
+      console.error("Failed to remove member:", err?.message || err);
+      throw new Error(err?.message || "Failed to delete user. Please try again.");
     }
   };
 

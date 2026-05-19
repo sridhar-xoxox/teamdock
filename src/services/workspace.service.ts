@@ -56,23 +56,32 @@ export const workspaceService = {
   },
 
   async removeMember(workspaceId: string, userId: string) {
-    // 1. Unassign all tasks assigned to this user in this workspace to satisfy database constraints
-    const { error: tasksError } = await (supabase.from('tasks') as any)
-      .update({ assigned_to: null })
-      .eq('workspace_id', workspaceId)
-      .eq('assigned_to', userId);
-      
-    if (tasksError) {
-      console.error("Failed to unassign tasks before member removal:", tasksError);
-      throw tasksError;
-    }
+    // Try the SECURITY DEFINER RPC first (requires schema cache to be loaded)
+    const { error: rpcError } = await (supabase.rpc as any)('remove_workspace_member', {
+      p_workspace_id: workspaceId,
+      p_user_id: userId,
+    });
 
-    // 2. Remove the member
-    const { error } = await supabase
-      .from('workspace_members')
-      .delete()
-      .eq('workspace_id', workspaceId)
-      .eq('user_id', userId);
-    if (error) throw error;
+    // If RPC not found in schema cache yet, fall back to direct two-step delete
+    if (rpcError) {
+      const isNotFound = rpcError.code === 'PGRST202' ||
+        (rpcError.message || '').toLowerCase().includes('could not find');
+
+      if (!isNotFound) throw rpcError; // real error — surface it
+
+      // Fallback: unassign tasks then delete member directly
+      const { error: tasksError } = await (supabase.from('tasks') as any)
+        .update({ assigned_to: null })
+        .eq('workspace_id', workspaceId)
+        .eq('assigned_to', userId);
+      if (tasksError) throw tasksError;
+
+      const { error: deleteError } = await supabase
+        .from('workspace_members')
+        .delete()
+        .eq('workspace_id', workspaceId)
+        .eq('user_id', userId);
+      if (deleteError) throw deleteError;
+    }
   }
 };

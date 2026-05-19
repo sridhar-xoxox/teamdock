@@ -96,7 +96,8 @@ CREATE POLICY "workspace_members: member read" ON public.workspace_members FOR S
     )
   );
 
-CREATE POLICY "workspace_members: admin manage" ON public.workspace_members FOR ALL
+-- Admin can update roles (non-recursive: checks a separate alias)
+CREATE POLICY "workspace_members: admin update" ON public.workspace_members FOR UPDATE
   USING (
     EXISTS (
       SELECT 1 FROM public.workspace_members wm
@@ -109,6 +110,57 @@ CREATE POLICY "workspace_members: admin manage" ON public.workspace_members FOR 
 -- Allow new users to insert themselves when accepting an invite
 CREATE POLICY "workspace_members: self insert" ON public.workspace_members FOR INSERT
   WITH CHECK (auth.uid() = user_id);
+
+-- ──────────────────────────────────────────────
+-- SECURE RPC: remove_workspace_member
+-- Runs as SECURITY DEFINER to bypass the self-referencing
+-- RLS check on workspace_members that causes DELETE to fail.
+-- Validates the caller is an admin before deleting.
+-- ──────────────────────────────────────────────
+CREATE OR REPLACE FUNCTION public.remove_workspace_member(
+  p_workspace_id uuid,
+  p_user_id      uuid
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  v_caller_role text;
+BEGIN
+  -- Verify the caller is an admin of this workspace
+  SELECT role INTO v_caller_role
+  FROM public.workspace_members
+  WHERE workspace_id = p_workspace_id
+    AND user_id = auth.uid();
+
+  IF v_caller_role IS NULL OR v_caller_role <> 'admin' THEN
+    RAISE EXCEPTION 'Permission denied: only admins can remove workspace members';
+  END IF;
+
+  -- Safety: prevent removing the workspace owner
+  IF EXISTS (
+    SELECT 1 FROM public.workspaces
+    WHERE id = p_workspace_id AND owner_id = p_user_id
+  ) THEN
+    RAISE EXCEPTION 'Cannot remove the workspace owner';
+  END IF;
+
+  -- Unassign tasks first to clear FK references
+  UPDATE public.tasks
+  SET assigned_to = NULL
+  WHERE workspace_id = p_workspace_id
+    AND assigned_to = p_user_id;
+
+  -- Remove the member
+  DELETE FROM public.workspace_members
+  WHERE workspace_id = p_workspace_id
+    AND user_id = p_user_id;
+END;
+$$;
+
+-- Grant execute to authenticated users
+GRANT EXECUTE ON FUNCTION public.remove_workspace_member(uuid, uuid) TO authenticated;
 
 -- ──────────────────────────────────────────────
 -- 4. TASKS

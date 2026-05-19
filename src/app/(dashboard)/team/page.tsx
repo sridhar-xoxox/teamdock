@@ -2,7 +2,9 @@
 import React, { useState } from "react";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
-import { Users, MoreHorizontal, Shield, Clock, Plus, X, Search, Info, LayoutGrid, Trash2 } from "lucide-react";
+import { Users, Shield, Clock, Plus, X, Search, Info, LayoutGrid, Trash2, AlertCircle, UserX } from "lucide-react";
+
+interface ConfirmTarget { id: string; name: string; email: string; }
 
 const ROLES = [
   "Admin",
@@ -18,8 +20,16 @@ export default function TeamPage() {
   const [inviteRole, setInviteRole] = useState(ROLES[0]);
   const [search, setSearch] = useState("");
   const [showInfo, setShowInfo] = useState(false);
+  const [toast, setToast] = useState<{ type: 'error' | 'success'; message: string } | null>(null);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+  const [confirmTarget, setConfirmTarget] = useState<ConfirmTarget | null>(null);
 
   const isAdmin = currentUser?.role?.toLowerCase().includes("admin");
+
+  const showToast = (type: 'error' | 'success', message: string) => {
+    setToast({ type, message });
+    setTimeout(() => setToast(null), 4000);
+  };
 
   const handleInvite = (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,6 +37,41 @@ export default function TeamPage() {
     addInvite(inviteEmail.trim(), inviteRole);
     setInviteEmail("");
     setShowInviteForm(false);
+  };
+
+  const handleRemoveMember = async (memberId: string) => {
+    setRemovingId(memberId);
+    setConfirmTarget(null);
+    try {
+      await removeMember(memberId);
+      showToast('success', 'Member removed from workspace.');
+    } catch (err: any) {
+      showToast('error', err?.message || 'Failed to remove member.');
+    } finally {
+      setRemovingId(null);
+    }
+  };
+
+  const handleDeleteAccount = async (memberId: string) => {
+    setRemovingId(memberId);
+    setConfirmTarget(null);
+    try {
+      // First remove from workspace
+      await removeMember(memberId);
+      // Then permanently delete auth account
+      const res = await fetch('/api/admin/delete-user', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: memberId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete account');
+      showToast('success', 'Account permanently deleted. They cannot log in again.');
+    } catch (err: any) {
+      showToast('error', err?.message || 'Failed to delete account.');
+    } finally {
+      setRemovingId(null);
+    }
   };
 
   const filteredMembers = members.filter(m => {
@@ -41,6 +86,18 @@ export default function TeamPage() {
 
   return (
     <div className="flex h-full flex-col bg-white dark:bg-[#0d1117] transition-colors duration-300">
+      {/* Toast Notification */}
+      {toast && (
+        <div className={cn(
+          "fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl text-sm font-semibold animate-in fade-in slide-in-from-bottom-4 duration-300 min-w-[260px] max-w-sm",
+          toast.type === 'error'
+            ? "bg-rose-600 text-white"
+            : "bg-emerald-600 text-white"
+        )}>
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          {toast.message}
+        </div>
+      )}
       {/* Gmail Style Toolbar */}
       <div className="flex items-center gap-4 px-4 py-3 border-b border-slate-100 dark:border-white/5 bg-white/80 dark:bg-[#0d1117]/80 backdrop-blur-md sticky top-0 z-20">
         <div className="flex-1 max-w-2xl relative group ml-2 flex items-center gap-3">
@@ -228,12 +285,20 @@ export default function TeamPage() {
                     </div>
                   )}
                   {isAdmin && currentUser?.id !== member.id ? (
-                    <button 
-                      onClick={() => removeMember(member.id)}
-                      className="p-2 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-full text-slate-400 hover:text-rose-500 transition-colors"
-                      title="Remove member from workspace"
+                    <button
+                      onClick={() => setConfirmTarget({ id: member.id, name: member.name, email: member.email })}
+                      disabled={removingId === member.id}
+                      className={cn(
+                        "p-2 rounded-full transition-colors",
+                        removingId === member.id
+                          ? "opacity-50 cursor-not-allowed text-slate-400"
+                          : "hover:bg-rose-50 dark:hover:bg-rose-500/10 text-slate-400 hover:text-rose-500"
+                      )}
+                      title="Remove member"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      {removingId === member.id
+                        ? <div className="h-4 w-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
+                        : <Trash2 className="h-4 w-4" />}
                     </button>
                   ) : (
                     <div className="w-8" />
@@ -288,6 +353,68 @@ export default function TeamPage() {
           )}
         </div>
       </div>
+      {/* Confirm Remove/Delete Modal */}
+      {confirmTarget && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/70 backdrop-blur-md" onClick={() => setConfirmTarget(null)} />
+          <div className="relative w-full max-w-md bg-white dark:bg-[#161b22] rounded-[2rem] shadow-2xl border border-slate-200 dark:border-white/10 overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-8">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="h-12 w-12 rounded-2xl bg-rose-500/10 flex items-center justify-center shrink-0">
+                  <UserX className="h-6 w-6 text-rose-500" />
+                </div>
+                <div className="min-w-0">
+                  <h2 className="text-lg font-black text-slate-900 dark:text-white truncate">{confirmTarget.name}</h2>
+                  <p className="text-xs text-slate-400 truncate">{confirmTarget.email}</p>
+                </div>
+                <button onClick={() => setConfirmTarget(null)} className="ml-auto p-2 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Choose how to remove this member:</p>
+
+              <div className="space-y-3">
+                {/* Option 1: Remove from workspace only */}
+                <button
+                  onClick={() => handleRemoveMember(confirmTarget.id)}
+                  className="w-full text-left p-4 rounded-2xl border-2 border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 transition-all group"
+                >
+                  <div className="flex items-start gap-3">
+                    <Trash2 className="h-5 w-5 text-amber-500 mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-sm font-bold text-slate-900 dark:text-white">Remove from Workspace</p>
+                      <p className="text-xs text-slate-500 mt-0.5">They leave this workspace but can still log in and join others.</p>
+                    </div>
+                  </div>
+                </button>
+
+                {/* Option 2: Delete account permanently */}
+                <button
+                  onClick={() => handleDeleteAccount(confirmTarget.id)}
+                  className="w-full text-left p-4 rounded-2xl border-2 border-rose-500/30 bg-rose-500/5 hover:bg-rose-500/10 transition-all group"
+                >
+                  <div className="flex items-start gap-3">
+                    <UserX className="h-5 w-5 text-rose-500 mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-sm font-bold text-slate-900 dark:text-white">Delete Account Permanently</p>
+                      <p className="text-xs text-slate-500 mt-0.5">Removes from workspace AND deletes their login. They cannot sign in again.</p>
+                    </div>
+                  </div>
+                </button>
+              </div>
+
+              <button
+                onClick={() => setConfirmTarget(null)}
+                className="w-full mt-4 py-2.5 rounded-xl text-sm font-medium text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 transition-all"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Role Info Modal */}
       {showInfo && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
