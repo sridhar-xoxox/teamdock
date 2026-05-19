@@ -1,4 +1,27 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#6366f1"/>
-  <path d="M160 352h192M160 256h192M160 160h100" stroke="#fff" stroke-width="40" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="primaryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#6366f1" />
+      <stop offset="100%" stopColor="#06b6d4" />
+    </linearGradient>
+    <linearGradient id="secondaryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#3b82f6" />
+      <stop offset="100%" stopColor="#8b5cf6" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Rounded dark background matching our theme -->
+  <rect width="512" height="512" rx="128" fill="#0d1117" />
+  
+  <!-- Outer Dock Ring -->
+  <circle cx="256" cy="256" r="160" stroke="url(#primaryGrad)" stroke-width="32" stroke-linecap="round" stroke-dasharray="720 200" />
+  
+  <!-- Inner Dock Ring -->
+  <circle cx="256" cy="256" r="92" stroke="url(#secondaryGrad)" stroke-width="20" stroke-linecap="round" stroke-dasharray="320 120" />
+  
+  <!-- Connections -->
+  <path d="M 256 128 L 256 200 M 256 312 L 256 384 M 128 256 L 200 256 M 312 256 L 384 256" stroke="url(#primaryGrad)" stroke-width="20" stroke-linecap="round" />
+  
+  <!-- Center Core dot -->
+  <circle cx="256" cy="256" r="32" fill="url(#primaryGrad)" />
 </svg>
