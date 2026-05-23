@@ -14,6 +14,8 @@ export default function MyTasksPage() {
   const [filter, setFilter] = useState<"ALL" | "HIGH" | "DONE">("ALL");
 
   const isMember = currentUser?.role?.toLowerCase() === "member";
+  const isAdmin = currentUser?.role?.toLowerCase() === "admin";
+  const canDelete = isAdmin; // Only Admins can delete tasks
 
   // RBAC Filter: Members see only their own tasks
   const tasks = (isMember && currentUser) 
@@ -197,6 +199,7 @@ export default function MyTasksPage() {
           onDelete={deleteTask}
           onSelect={setSelectedTask}
           onPriorityChange={handlePriorityChange}
+          canDelete={canDelete}
         />
         
         {filtered.length === 0 && (

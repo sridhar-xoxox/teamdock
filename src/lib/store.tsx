@@ -329,26 +329,29 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const wsId = invite.workspaceId || invite.workspace_id;
     if (!wsId) throw new Error("workspaceId is required");
 
-    let inviteId = invite.id;
-    if (!inviteId) {
-      // Fetch invite id if missing
-      const pending = await invitationService.getPendingInvite(invite.email);
-      if (pending) {
-        inviteId = pending.id;
+    const newMember = { ...member, workspaceId: wsId, role: invite.role };
+
+    // Fetch workspace info from DB and add to workspaces state so the
+    // dashboard immediately has a valid activeWorkspace
+    try {
+      const wsData = await workspaceService.getWorkspaces(member.id);
+      if (wsData.length > 0) {
+        setWorkspaces(wsData.map((w: any) => ({ id: w.id, name: w.name })));
+      } else {
+        // Fallback: add workspace stub so routing works
+        setWorkspaces(p => {
+          if (p.find(w => w.id === wsId)) return p;
+          return [...p, { id: wsId, name: invite.workspaceId || "Workspace" }];
+        });
       }
+    } catch (e) {
+      // Fallback stub
+      setWorkspaces(p => {
+        if (p.find(w => w.id === wsId)) return p;
+        return [...p, { id: wsId, name: "Workspace" }];
+      });
     }
 
-    if (inviteId) {
-      await invitationService.acceptInvite(
-        inviteId, 
-        wsId, 
-        member.id, 
-        invite.role.toLowerCase(), 
-        invite.email
-      );
-    }
-    
-    const newMember = { ...member, workspaceId: wsId, role: invite.role };
     setAllMembers(p => [...p, newMember]);
     setAllInvites(p => p.filter(i => i.email !== invite.email));
     handleSetCurrentUser(newMember);

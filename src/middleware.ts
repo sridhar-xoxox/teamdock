@@ -41,7 +41,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  if ((pathname === '/login' || pathname === '/signup' || pathname === '/') && user) {
+  // If logged in and trying to access auth pages, go to board
+  if ((pathname === '/login' || pathname === '/signup') && user) {
     return NextResponse.redirect(new URL('/board', request.url))
   }
 

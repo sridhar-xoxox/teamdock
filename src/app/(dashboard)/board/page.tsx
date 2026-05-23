@@ -107,7 +107,11 @@ export default function DashboardPage() {
   if (!mounted) return null;
 
   const isAdmin = currentUser?.role?.toLowerCase() === "admin";
+  const isManager = currentUser?.role?.toLowerCase() === "manager";
   const isMember = currentUser?.role?.toLowerCase() === "member";
+  const canManageProjects = isAdmin || isManager; // Admin + Manager can create projects
+  const canDeleteProjects = isAdmin;               // Only Admin can delete projects
+  const canDeleteTasks = isAdmin;                  // Only Admin can delete tasks
 
   // Calculated stats
   const realProjectsCount = projects.length;
@@ -280,7 +284,7 @@ export default function DashboardPage() {
             {/* Projects Section Card */}
             <div className="p-5 md:p-7 rounded-[32px] bg-white dark:bg-[#1a1f2e] border border-slate-100 dark:border-white/5 shadow-sm">
               <SectionHeader title="Projects" count={filteredProjects.length}>
-                {isAdmin && (
+                {canManageProjects && (
                   <button
                     onClick={() => { setAddingProject(true); setNewProjectName(""); }}
                     className="p-2 rounded-xl bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 hover:scale-105 active:scale-95 transition-all"
@@ -345,7 +349,7 @@ export default function DashboardPage() {
                           {tasks.filter(t => !t.isCompleted && t.projectId === p.id).length} tasks remaining
                         </p>
                       </div>
-                      {isAdmin && (
+                       {canDeleteProjects && (
                         <button
                           onClick={() => deleteProject(p.id)}
                           className="opacity-0 group-hover:opacity-100 absolute top-3 right-3 p-1.5 rounded-xl text-slate-300 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-500 transition-all"

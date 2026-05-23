@@ -1,27 +1,24 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
-  <defs>
-    <linearGradient id="primaryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stopColor="#6366f1" />
-      <stop offset="100%" stopColor="#06b6d4" />
-    </linearGradient>
-    <linearGradient id="secondaryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stopColor="#3b82f6" />
-      <stop offset="100%" stopColor="#8b5cf6" />
-    </linearGradient>
-  </defs>
-  
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <!-- Rounded dark background matching our theme -->
   <rect width="512" height="512" rx="128" fill="#0d1117" />
   
-  <!-- Outer Dock Ring -->
-  <circle cx="256" cy="256" r="160" stroke="url(#primaryGrad)" stroke-width="32" stroke-linecap="round" stroke-dasharray="720 200" />
-  
-  <!-- Inner Dock Ring -->
-  <circle cx="256" cy="256" r="92" stroke="url(#secondaryGrad)" stroke-width="20" stroke-linecap="round" stroke-dasharray="320 120" />
-  
-  <!-- Connections -->
-  <path d="M 256 128 L 256 200 M 256 312 L 256 384 M 128 256 L 200 256 M 312 256 L 384 256" stroke="url(#primaryGrad)" stroke-width="20" stroke-linecap="round" />
-  
-  <!-- Center Core dot -->
-  <circle cx="256" cy="256" r="32" fill="url(#primaryGrad)" />
+  <g transform="scale(5.12)" fill="#ffffff">
+    <!-- Left Person -->
+    <circle cx="30" cy="38" r="7" />
+    <path d="M 18 56 C 18 48, 42 48, 42 56 Z" />
+
+    <!-- Right Person -->
+    <circle cx="70" cy="38" r="7" />
+    <path d="M 58 56 C 58 48, 82 48, 82 56 Z" />
+
+    <!-- Center Person -->
+    <circle cx="50" cy="28" r="9" />
+    <path d="M 34 56 C 34 44, 66 44, 66 56 Z" />
+
+    <!-- Table Top (Curved Bar) -->
+    <path d="M 15 58 Q 50 54 85 58 C 88 58, 88 62, 85 62 Q 50 58 15 62 C 12 62, 12 58, 15 58 Z" />
+
+    <!-- Table Base (Triangle Shadow) -->
+    <path d="M 22 62 Q 50 68 50 72 Q 50 68 78 62 L 50 78 Z" />
+  </g>
 </svg>

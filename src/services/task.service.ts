@@ -8,46 +8,57 @@ export type NewTask = Database['public']['Tables']['tasks']['Insert'];
 
 export const taskService = {
   async getTasks(workspaceId: string) {
-    const { data, error } = await supabase
-      .from('tasks')
-      .select('*')
-      .eq('workspace_id', workspaceId)
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-    return data;
+    const response = await fetch(`/api/tasks?workspaceId=${encodeURIComponent(workspaceId)}`);
+    if (!response.ok) {
+      const errBody = await response.json().catch(() => ({}));
+      throw new Error(errBody.error || `Failed to fetch tasks: ${response.status}`);
+    }
+    const { tasks } = await response.json();
+    return tasks;
   },
 
   async addTask(task: NewTask) {
-    const { data, error } = await supabase
-      .from('tasks')
-      .insert(task as any)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
+    const response = await fetch('/api/tasks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        workspaceId: task.workspace_id,
+        title: task.title,
+        description: task.description,
+        priority: task.priority,
+        status: task.status,
+        due_date: task.due_date,
+        assigned_to: task.assigned_to
+      }),
+    });
+    if (!response.ok) {
+      const errBody = await response.json().catch(() => ({}));
+      throw new Error(errBody.error || `Failed to add task: ${response.status}`);
+    }
+    return await response.json();
   },
 
   async updateTask(id: string, updates: Partial<Task>) {
-    const { data, error } = await (supabase
-      .from('tasks') as any)
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
+    const response = await fetch('/api/tasks', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, updates }),
+    });
+    if (!response.ok) {
+      const errBody = await response.json().catch(() => ({}));
+      throw new Error(errBody.error || `Failed to update task: ${response.status}`);
+    }
+    return await response.json();
   },
 
   async deleteTask(id: string) {
-    const { error } = await supabase
-      .from('tasks')
-      .delete()
-      .eq('id', id);
-
-    if (error) throw error;
+    const response = await fetch(`/api/tasks?id=${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) {
+      const errBody = await response.json().catch(() => ({}));
+      throw new Error(errBody.error || `Failed to delete task: ${response.status}`);
+    }
   },
 
   async subscribeToTasks(workspaceId: string, callback: (payload: any) => void) {

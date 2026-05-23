@@ -33,20 +33,7 @@ export default function LandingPage() {
           <div className="absolute w-[600px] h-[600px] bg-cyan-500/10 blur-[100px] rounded-full animate-pulse" style={{ animationDuration: '6s', animationDelay: '2s' }} />
         </div>
 
-        {/* CSS for custom fade up animation */}
-        <style dangerouslySetInnerHTML={{__html: `
-          @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(30px) scale(0.95); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-          }
-          .animate-fade-up {
-            opacity: 0;
-            animation: fadeUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-          }
-          .delay-200 { animation-delay: 200ms; }
-          .delay-400 { animation-delay: 400ms; }
-          .delay-600 { animation-delay: 600ms; }
-        `}} />
+        {/* Fade-up animations applied via Tailwind-compatible inline styles */}
 
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-8 backdrop-blur-sm relative z-10 animate-fade-up">
           <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Enterprise-Grade</span>

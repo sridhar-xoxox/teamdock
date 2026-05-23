@@ -39,12 +39,17 @@ body {
 @keyframes fadeIn     { from { opacity: 0 } to { opacity: 1 } }
 @keyframes slideUp    { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: translateY(0) } }
 @keyframes zoomIn95   { from { opacity: 0; transform: scale(.95) } to { opacity: 1; transform: scale(1) } }
+@keyframes fadeUp     { from { opacity: 0; transform: translateY(30px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
 .animate-in          { animation-fill-mode: both; }
 .fade-in             { animation: fadeIn 0.2s ease-out; }
 .zoom-in-95          { animation: zoomIn95 0.15s ease-out; }
 .slide-up            { animation: slideUp 0.3s ease-out; }
 .duration-150        { animation-duration: 0.15s; }
+.animate-fade-up     { opacity: 0; animation: fadeUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.delay-200           { animation-delay: 200ms; }
+.delay-400           { animation-delay: 400ms; }
+.delay-600           { animation-delay: 600ms; }
 
 /* ── Scrollbar ─────────────────────────────────────────────── */
 ::-webkit-scrollbar          { width: 6px; height: 6px; }

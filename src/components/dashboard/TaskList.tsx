@@ -10,6 +10,7 @@ interface TaskListProps {
   onDelete: (id: string) => void;
   onSelect: (task: Task) => void;
   onPriorityChange: (id: string, priority: Priority) => void;
+  canDelete?: boolean; // Only Admins can delete tasks
 }
 
 export function TaskList({
@@ -19,6 +20,7 @@ export function TaskList({
   onDelete,
   onSelect,
   onPriorityChange,
+  canDelete = false,
 }: TaskListProps) {
   const getAssignee = (id?: string) => members.find((m) => m.id === id);
 
@@ -49,6 +51,7 @@ export function TaskList({
           onDelete={onDelete}
           onSelect={onSelect}
           onPriorityChange={onPriorityChange}
+          canDelete={canDelete}
         />
       ))}
     </div>
