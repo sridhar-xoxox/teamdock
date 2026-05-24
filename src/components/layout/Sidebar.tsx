@@ -22,11 +22,7 @@ export default function Sidebar() {
   } = useStore();
 
   const isAdmin = currentUser?.role?.toLowerCase() === "admin";
-  const isManager = currentUser?.role?.toLowerCase() === "manager";
   const isMember = currentUser?.role?.toLowerCase() === "member";
-  const canManageProjects = isAdmin || isManager;
-  const canDeleteProjects = isAdmin;
-  const canCreateTask = isAdmin || isManager;
 
   const [addingProject, setAddingProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
@@ -59,8 +55,8 @@ export default function Sidebar() {
         <p className="text-[10px] text-slate-500">{pending} tasks remaining</p>
       </div>
 
-      {/* Compose Button — Admin & Manager only */}
-      {canCreateTask && (
+      {/* Compose Button */}
+      {!isMember && (
         <div className="px-4 pb-4">
           <Link href="/add-task" className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-500/25 transition-all hover:bg-indigo-500 hover:-translate-y-0.5 hover:shadow-indigo-500/40">
             <Plus className="h-4 w-4" /> Compose Task
@@ -96,7 +92,7 @@ export default function Sidebar() {
       <div className="flex-1 mt-6 px-3 flex flex-col min-h-0 overflow-hidden">
         <div className="flex items-center justify-between px-3 mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
           <span>Projects</span>
-          {canManageProjects && (
+          {isAdmin && (
             <button
               onClick={() => setAddingProject(true)}
               className="rounded-md p-0.5 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white transition-colors"
@@ -136,7 +132,7 @@ export default function Sidebar() {
                 {p.name[0].toUpperCase()}
               </div>
               <span className="truncate flex-1 font-semibold text-slate-700 dark:text-slate-300 group-hover:text-slate-950 dark:group-hover:text-white transition-colors">{p.name}</span>
-              {canDeleteProjects && (
+              {isAdmin && (
                 <button
                   onClick={() => deleteProject(p.id)}
                   className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-red-50 dark:hover:bg-red-500/10 text-slate-300 hover:text-red-500 transition-all"

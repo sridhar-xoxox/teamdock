@@ -107,11 +107,7 @@ export default function DashboardPage() {
   if (!mounted) return null;
 
   const isAdmin = currentUser?.role?.toLowerCase() === "admin";
-  const isManager = currentUser?.role?.toLowerCase() === "manager";
   const isMember = currentUser?.role?.toLowerCase() === "member";
-  const canManageProjects = isAdmin || isManager; // Admin + Manager can create projects
-  const canDeleteProjects = isAdmin;               // Only Admin can delete projects
-  const canDeleteTasks = isAdmin;                  // Only Admin can delete tasks
 
   // Calculated stats
   const realProjectsCount = projects.length;
@@ -145,7 +141,11 @@ export default function DashboardPage() {
     ? assignedToMe.slice(0, 5) 
     : (assignedToMe.length > 0 ? assignedToMe.slice(0, 5) : filteredTasks.slice(0, 3));
   
-  const displayPeople = filteredMembers;
+  const displayPeople = filteredMembers.length > 0 ? filteredMembers : (
+    search === "" 
+      ? [{ id: "m1", name: "Marc Atenson", email: "marcnine@gmail.com", color: "bg-indigo-100", initials: "MA" }] 
+      : []
+  );
 
   return (
     <div className="flex-1 w-full bg-transparent pb-10">
@@ -252,28 +252,22 @@ export default function DashboardPage() {
               </SectionHeader>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
-                {displayPeople.length === 0 ? (
-                  <div className="col-span-3 py-8 text-center text-slate-400 dark:text-slate-600 font-medium border-2 border-dashed border-slate-100 dark:border-white/5 rounded-3xl">
-                    No members in this workspace yet
-                  </div>
-                ) : (
-                  displayPeople.map((m: any) => (
-                    <div key={m.id} className="group p-5 rounded-3xl border border-slate-50 dark:border-white/5 hover:bg-slate-50/50 dark:hover:bg-white/5 hover:border-indigo-500/20 transition-all text-center">
-                      <div
-                        className={cn(
-                          "w-14 h-14 rounded-full mx-auto mb-4 flex items-center justify-center font-black text-lg shadow-inner apple-bubble",
-                          !m.color?.startsWith('#') && (m.color || "bg-slate-100 dark:bg-white/5"),
-                          m.color?.startsWith('#') ? "text-white" : "text-indigo-600 dark:text-indigo-400"
-                        )}
-                        style={{ backgroundColor: m.color?.startsWith('#') ? m.color : undefined }}
-                      >
-                        {m.initials || m.name.split(' ').map((n:string)=>n[0]).join('').toUpperCase()}
-                      </div>
-                      <h5 className="font-bold text-slate-900 dark:text-white text-sm tracking-tight mb-1">{m.name}</h5>
-                      <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-tighter truncate px-2">{m.email}</p>
+                {displayPeople.map((m: any) => (
+                  <div key={m.id} className="group p-5 rounded-3xl border border-slate-50 dark:border-white/5 hover:bg-slate-50/50 dark:hover:bg-white/5 hover:border-indigo-500/20 transition-all text-center">
+                    <div
+                      className={cn(
+                        "w-14 h-14 rounded-full mx-auto mb-4 flex items-center justify-center font-black text-lg shadow-inner apple-bubble",
+                        !m.color?.startsWith('#') && (m.color || "bg-slate-100 dark:bg-white/5"),
+                        m.color?.startsWith('#') ? "text-white" : "text-indigo-600 dark:text-indigo-400"
+                      )}
+                      style={{ backgroundColor: m.color?.startsWith('#') ? m.color : undefined }}
+                    >
+                      {m.initials || m.name.split(' ').map((n:string)=>n[0]).join('').toUpperCase()}
                     </div>
-                  ))
-                )}
+                    <h5 className="font-bold text-slate-900 dark:text-white text-sm tracking-tight mb-1">{m.name}</h5>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-tighter truncate px-2">{m.email}</p>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -284,7 +278,7 @@ export default function DashboardPage() {
             {/* Projects Section Card */}
             <div className="p-5 md:p-7 rounded-[32px] bg-white dark:bg-[#1a1f2e] border border-slate-100 dark:border-white/5 shadow-sm">
               <SectionHeader title="Projects" count={filteredProjects.length}>
-                {canManageProjects && (
+                {isAdmin && (
                   <button
                     onClick={() => { setAddingProject(true); setNewProjectName(""); }}
                     className="p-2 rounded-xl bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 hover:scale-105 active:scale-95 transition-all"
@@ -349,7 +343,7 @@ export default function DashboardPage() {
                           {tasks.filter(t => !t.isCompleted && t.projectId === p.id).length} tasks remaining
                         </p>
                       </div>
-                       {canDeleteProjects && (
+                      {isAdmin && (
                         <button
                           onClick={() => deleteProject(p.id)}
                           className="opacity-0 group-hover:opacity-100 absolute top-3 right-3 p-1.5 rounded-xl text-slate-300 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-500 transition-all"

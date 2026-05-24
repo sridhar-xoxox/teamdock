@@ -2,17 +2,10 @@ import React from "react";
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { StoreProvider } from "@/lib/store";
-import { PWARegister } from "@/components/PWARegister";
 
 export const metadata: Metadata = {
   title: "TeamDock — Collaborative Task Management",
   description: "Real-time collaborative to-do app with priorities, due dates, and team sync.",
-  manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "TeamDock",
-  },
 };
 export const viewport: Viewport = { themeColor: "#6366f1" };
 
@@ -36,7 +29,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body>
-        <PWARegister />
         <StoreProvider>{children}</StoreProvider>
       </body>
     </html>

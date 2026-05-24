@@ -101,7 +101,6 @@ interface Ctx {
   getMemberByEmail: (email: string) => Member | undefined;
   getInviteByEmail: (email: string) => Invite | undefined;
   updateMemberRole: (id: string, role: string) => void;
-  removeMember: (id: string) => Promise<void>;
   addTaskComment: (taskId: string, memberId: string, text: string) => void;
   allTasks: Task[];
   allMembers: Member[];
@@ -329,29 +328,26 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const wsId = invite.workspaceId || invite.workspace_id;
     if (!wsId) throw new Error("workspaceId is required");
 
-    const newMember = { ...member, workspaceId: wsId, role: invite.role };
-
-    // Fetch workspace info from DB and add to workspaces state so the
-    // dashboard immediately has a valid activeWorkspace
-    try {
-      const wsData = await workspaceService.getWorkspaces(member.id);
-      if (wsData.length > 0) {
-        setWorkspaces(wsData.map((w: any) => ({ id: w.id, name: w.name })));
-      } else {
-        // Fallback: add workspace stub so routing works
-        setWorkspaces(p => {
-          if (p.find(w => w.id === wsId)) return p;
-          return [...p, { id: wsId, name: invite.workspaceId || "Workspace" }];
-        });
+    let inviteId = invite.id;
+    if (!inviteId) {
+      // Fetch invite id if missing
+      const pending = await invitationService.getPendingInvite(invite.email);
+      if (pending) {
+        inviteId = pending.id;
       }
-    } catch (e) {
-      // Fallback stub
-      setWorkspaces(p => {
-        if (p.find(w => w.id === wsId)) return p;
-        return [...p, { id: wsId, name: "Workspace" }];
-      });
     }
 
+    if (inviteId) {
+      await invitationService.acceptInvite(
+        inviteId, 
+        wsId, 
+        member.id, 
+        invite.role.toLowerCase(), 
+        invite.email
+      );
+    }
+    
+    const newMember = { ...member, workspaceId: wsId, role: invite.role };
     setAllMembers(p => [...p, newMember]);
     setAllInvites(p => p.filter(i => i.email !== invite.email));
     handleSetCurrentUser(newMember);
@@ -490,19 +486,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setSessions(p => p.map(s => s.id === id ? { ...s, role } : s));
   };
 
-  const removeMember = async (id: string) => {
-    if (!activeWorkspace) return;
-    try {
-      await workspaceService.removeMember(activeWorkspace.id, id);
-      setAllMembers(p => p.filter(m => m.id !== id));
-      setSessions(p => p.filter(s => s.id !== id));
-      setAllTasks(p => p.map(t => t.workspaceId === activeWorkspace.id && t.assigneeId === id ? { ...t, assigneeId: undefined } : t));
-    } catch (err: any) {
-      console.error("Failed to remove member:", err?.message || err);
-      throw new Error(err?.message || "Failed to delete user. Please try again.");
-    }
-  };
-
   const addTaskComment = (taskId: string, memberId: string, text: string) => {
     const newComment: TaskComment = {
       id: `c${Date.now()}`,
@@ -523,7 +506,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       addTask, updateTask, deleteTask, moveTask,
       projects, addProject, deleteProject,
       theme, toggleTheme,
-      getMemberByEmail, getInviteByEmail, updateMemberRole, removeMember, addTaskComment,
+      getMemberByEmail, getInviteByEmail, updateMemberRole, addTaskComment,
       allTasks, allMembers, loading
     }}> {children} </StoreCtx.Provider>
   );

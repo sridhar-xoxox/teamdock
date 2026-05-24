@@ -14,8 +14,6 @@ export default function MyTasksPage() {
   const [filter, setFilter] = useState<"ALL" | "HIGH" | "DONE">("ALL");
 
   const isMember = currentUser?.role?.toLowerCase() === "member";
-  const isAdmin = currentUser?.role?.toLowerCase() === "admin";
-  const canDelete = isAdmin; // Only Admins can delete tasks
 
   // RBAC Filter: Members see only their own tasks
   const tasks = (isMember && currentUser) 
@@ -199,7 +197,6 @@ export default function MyTasksPage() {
           onDelete={deleteTask}
           onSelect={setSelectedTask}
           onPriorityChange={handlePriorityChange}
-          canDelete={canDelete}
         />
         
         {filtered.length === 0 && (
@@ -213,16 +210,14 @@ export default function MyTasksPage() {
         )}
       </div>
 
-      {/* Floating Compose Button — hidden for Members */}
-      {!isMember && (
-        <Link
-          href="/add-task"
-          className="fixed right-8 bottom-8 flex items-center gap-3 bg-white dark:bg-[#1f2937] hover:bg-slate-50 dark:hover:bg-[#374151] px-6 py-4 rounded-2xl shadow-[0_1px_3px_0_rgba(60,64,67,0.30),0_4px_8px_3px_rgba(60,64,67,0.15)] transition-all group active:scale-95"
-        >
-          <Plus className="h-6 w-6 text-indigo-600" />
-          <span className="font-bold text-slate-700 dark:text-slate-200">Compose</span>
-        </Link>
-      )}
+      {/* Floating Action Button */}
+      <Link
+        href="/add-task"
+        className="fixed right-8 bottom-8 flex items-center gap-3 bg-white dark:bg-[#1f2937] hover:bg-slate-50 dark:hover:bg-[#374151] px-6 py-4 rounded-2xl shadow-[0_1px_3px_0_rgba(60,64,67,0.30),0_4px_8px_3px_rgba(60,64,67,0.15)] transition-all group active:scale-95"
+      >
+        <Plus className="h-6 w-6 text-indigo-600" />
+        <span className="font-bold text-slate-700 dark:text-slate-200">Compose</span>
+      </Link>
 
       {/* Task Detail View */}
       {selectedTask && (

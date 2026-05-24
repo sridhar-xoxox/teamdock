@@ -10,10 +10,9 @@ interface TaskListItemProps {
   onDelete: (id: string) => void;
   onSelect: (task: Task) => void;
   onPriorityChange: (id: string, priority: Priority) => void;
-  canDelete?: boolean;
 }
 
-export function TaskListItem({ task, assignee, onToggleComplete, onDelete, onSelect, onPriorityChange, canDelete = false }: TaskListItemProps) {
+export function TaskListItem({ task, assignee, onToggleComplete, onDelete, onSelect, onPriorityChange }: TaskListItemProps) {
   const { projects } = useStore();
   const project = projects.find(p => p.id === task.projectId);
   const isHigh = task.priority === "HIGH";
@@ -85,11 +84,9 @@ export function TaskListItem({ task, assignee, onToggleComplete, onDelete, onSel
           <button onClick={() => onToggleComplete(task.id, !task.isCompleted)} className="p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500 transition-colors" title={task.isCompleted ? "Mark as TODO" : "Archive"}>
             {task.isCompleted ? <Clock className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
           </button>
-          {canDelete && (
-            <button onClick={() => onDelete(task.id)} className="p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-white/10 text-rose-500 transition-colors" title="Delete task">
-              <Trash2 className="h-4 w-4" />
-            </button>
-          )}
+          <button onClick={() => onDelete(task.id)} className="p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500 transition-colors" title="Delete">
+            <Trash2 className="h-4 w-4" />
+          </button>
           <button className="p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500 transition-colors">
             <MoreVertical className="h-4 w-4" />
           </button>

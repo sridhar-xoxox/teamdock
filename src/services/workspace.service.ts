@@ -1,59 +1,66 @@
+import { createClient } from '@/lib/supabase/client';
+
+const supabase = createClient();
+
 export const workspaceService = {
   async createWorkspace(name: string, userId: string) {
-    const response = await fetch('/api/workspace/create', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, userId }),
-    });
-    if (response.ok) {
-      return await response.json();
-    }
-    const errBody = await response.json().catch(() => ({}));
-    throw new Error(errBody.error || `Workspace creation failed: ${response.status}`);
+    const { data: workspace, error: wsError } = await supabase
+      .from('workspaces')
+      .insert({ name, owner_id: userId } as any)
+      .select()
+      .single();
+    if (wsError) throw wsError;
+
+    const { error: memberError } = await supabase
+      .from('workspace_members')
+      .insert({
+        workspace_id: (workspace as any).id,
+        user_id: userId,
+        role: 'admin'
+      } as any);
+    if (memberError) throw memberError;
+
+    return workspace;
   },
 
   async getWorkspaces(userId: string) {
-    const response = await fetch('/api/workspaces');
-    if (!response.ok) {
-      const errBody = await response.json().catch(() => ({}));
-      throw new Error(errBody.error || `Failed to fetch workspaces: ${response.status}`);
-    }
-    const { workspaces } = await response.json();
-    return (workspaces as any[])?.map(d => {
+    // Use a direct join approach: get workspace_members and join workspaces
+    const { data, error } = await supabase
+      .from('workspace_members')
+      .select('role, workspace_id, workspaces(id, name, owner_id, created_at)')
+      .eq('user_id', userId);
+    if (error) throw error;
+
+    return (data as any[])?.map(d => {
+      // Supabase may return workspaces as array or object depending on version
       const ws = Array.isArray(d.workspaces) ? d.workspaces[0] : d.workspaces;
       return { ...ws, role: d.role };
     }).filter(Boolean) || [];
   },
 
   async getMembers(workspaceId: string) {
-    const res = await fetch(`/api/members?workspaceId=${encodeURIComponent(workspaceId)}`);
-    if (res.ok) {
-      const data = await res.json();
-      return data.members || [];
-    }
-    const errBody = await res.json().catch(() => ({}));
-    throw new Error(errBody.error || `Failed to fetch members: ${res.status}`);
+    const { data, error } = await supabase
+      .from('workspace_members')
+      .select('*, profiles(id, full_name, email, avatar_url)')
+      .eq('workspace_id', workspaceId);
+    if (error) throw error;
+    return data || [];
   },
 
   async updateMemberRole(workspaceId: string, userId: string, role: string) {
-    const response = await fetch('/api/members', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ workspaceId, userId, role }),
-    });
-    if (!response.ok) {
-      const errBody = await response.json().catch(() => ({}));
-      throw new Error(errBody.error || `Failed to update member role: ${response.status}`);
-    }
+    const { error } = await (supabase.from('workspace_members') as any)
+      .update({ role: role.toLowerCase() })
+      .eq('workspace_id', workspaceId)
+      .eq('user_id', userId);
+    if (error) throw error;
   },
 
   async removeMember(workspaceId: string, userId: string) {
-    const response = await fetch(`/api/members?workspaceId=${encodeURIComponent(workspaceId)}&userId=${encodeURIComponent(userId)}`, {
-      method: 'DELETE',
-    });
-    if (!response.ok) {
-      const errBody = await response.json().catch(() => ({}));
-      throw new Error(errBody.error || `Failed to remove member: ${response.status}`);
-    }
+    const { error } = await supabase
+      .from('workspace_members')
+      .delete()
+      .eq('workspace_id', workspaceId)
+      .eq('user_id', userId);
+    if (error) throw error;
   }
 };

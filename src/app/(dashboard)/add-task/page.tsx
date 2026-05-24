@@ -1,7 +1,7 @@
 "use client";
-import { useState, KeyboardEvent, useEffect } from "react";
+import { useState, KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Tag, Calendar, User, Flag, Layers, Send, Image as ImageIcon, X, UploadCloud, FolderKanban, ShieldX } from "lucide-react";
+import { ArrowLeft, Tag, Calendar, User, Flag, Layers, Send, Image as ImageIcon, X, UploadCloud, FolderKanban } from "lucide-react";
 import { useStore, Priority, TaskStatus } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
@@ -18,32 +18,7 @@ const STATUSES: { v: TaskStatus; label: string }[] = [
 
 export default function AddTaskPage() {
   const router = useRouter();
-  const { addTask, members, projects, activeWorkspace, currentUser } = useStore();
-
-  const role = currentUser?.role?.toLowerCase();
-  const canCreateTask = role === "admin" || role === "manager";
-
-  // Members cannot create tasks — redirect them
-  useEffect(() => {
-    if (currentUser && !canCreateTask) {
-      router.replace("/my-tasks");
-    }
-  }, [currentUser, canCreateTask, router]);
-
-  if (currentUser && !canCreateTask) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center gap-4 text-center p-8">
-        <div className="h-16 w-16 rounded-2xl bg-rose-500/10 flex items-center justify-center">
-          <ShieldX className="h-8 w-8 text-rose-500" />
-        </div>
-        <h2 className="text-xl font-black text-slate-900 dark:text-white">Access Restricted</h2>
-        <p className="text-sm text-slate-500 max-w-xs">Members can only interact with tasks assigned to them. Contact your Admin or Manager to create tasks.</p>
-        <button onClick={() => router.push("/my-tasks")} className="mt-2 px-6 py-3 rounded-xl bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-500 transition-colors">
-          Back to My Tasks
-        </button>
-      </div>
-    );
-  }
+  const { addTask, members, projects, activeWorkspace } = useStore();
 
   const [projectId, setProjectId]   = useState("");
   const [title, setTitle]           = useState("");
