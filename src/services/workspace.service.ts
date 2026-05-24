@@ -4,22 +4,11 @@ const supabase = createClient();
 
 export const workspaceService = {
   async createWorkspace(name: string, userId: string) {
-    const { data: workspace, error: wsError } = await supabase
-      .from('workspaces')
-      .insert({ name, owner_id: userId } as any)
-      .select()
-      .single();
-    if (wsError) throw wsError;
-
-    const { error: memberError } = await supabase
-      .from('workspace_members')
-      .insert({
-        workspace_id: (workspace as any).id,
-        user_id: userId,
-        role: 'admin'
-      } as any);
-    if (memberError) throw memberError;
-
+    const { data: workspace, error } = await supabase.rpc('create_workspace_with_member', {
+      p_name: name,
+      p_owner_id: userId
+    });
+    if (error) throw error;
     return workspace;
   },
 
@@ -56,11 +45,10 @@ export const workspaceService = {
   },
 
   async removeMember(workspaceId: string, userId: string) {
-    const { error } = await supabase
-      .from('workspace_members')
-      .delete()
-      .eq('workspace_id', workspaceId)
-      .eq('user_id', userId);
+    const { error } = await supabase.rpc('remove_workspace_member', {
+      p_workspace_id: workspaceId,
+      p_user_id: userId
+    });
     if (error) throw error;
   }
 };

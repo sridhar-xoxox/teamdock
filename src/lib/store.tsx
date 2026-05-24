@@ -4,6 +4,7 @@ import { authService } from "@/services/auth.service";
 import { taskService } from "@/services/task.service";
 import { workspaceService } from "@/services/workspace.service";
 import { invitationService } from "@/services/invitation.service";
+import { projectService } from "@/services/project.service";
 
 export const getAvatarColor = (initials: string) => {
   const colors = [
@@ -91,8 +92,8 @@ interface Ctx {
   moveTask: (id: string, s: TaskStatus) => Promise<void>;
 
   projects: Project[];
-  addProject: (name: string, color?: string) => Project;
-  deleteProject: (id: string) => void;
+  addProject: (name: string, color?: string) => Promise<Project | undefined>;
+  deleteProject: (id: string) => Promise<void>;
 
   theme: "light" | "dark";
   toggleTheme: () => void;
@@ -178,12 +179,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
                 assigneeId: t.assigned_to || undefined,
                 tags: [],
                 workspaceId: t.workspace_id,
+                projectId: t.project_id || undefined,
                 createdAt: t.created_at,
                 updatedAt: t.created_at,
                 attachments: t.attachments || []
               })));
             } catch (te) {
               console.error('Tasks fetch error:', te);
+            }
+
+            // 3.5 Fetch Projects (Resilient)
+            try {
+              const projectsData = await projectService.getProjects(firstWsId);
+              setAllProjects((projectsData as any[]).map((p: any) => ({
+                id: p.id,
+                name: p.name,
+                color: p.color,
+                workspaceId: p.workspace_id,
+                createdAt: p.created_at
+              })));
+            } catch (pe) {
+              console.error('Projects fetch error:', pe);
             }
 
             // 4. Fetch Members (Resilient)
@@ -400,8 +416,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         assigned_to: t.assigneeId || null,
         created_by: currentUser.id,
         due_date: t.dueDate || null,
-        attachments: t.attachments || null
-      }) as any;
+        attachments: t.attachments || null,
+        project_id: t.projectId || null
+      } as any) as any;
 
       const mappedTask: Task = {
         id: newTask.id,
@@ -414,6 +431,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         assigneeId: newTask.assigned_to || undefined,
         tags: [],
         workspaceId: newTask.workspace_id,
+        projectId: newTask.project_id || undefined,
         createdAt: newTask.created_at,
         updatedAt: newTask.created_at,
         attachments: newTask.attachments || []
@@ -435,6 +453,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (u.dueDate !== undefined) updates.due_date = u.dueDate;
       if (u.assigneeId !== undefined) updates.assigned_to = u.assigneeId;
       if (u.isCompleted !== undefined) updates.status = u.isCompleted ? "DONE" : "TODO";
+      if (u.projectId !== undefined) updates.project_id = u.projectId || null;
 
       await taskService.updateTask(id, updates);
       setAllTasks(p => p.map(t => t.id === id ? { ...t, ...u, updatedAt: new Date().toISOString() } : t));
@@ -461,19 +480,37 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addProject = (name: string, color?: string) => {
-    const p: Project = {
-      id: `p${Date.now()}`,
-      name,
-      color: color || ["bg-black dark:bg-white text-white dark:text-black", "bg-emerald-500", "bg-orange-500", "bg-pink-500", "bg-violet-500", "bg-cyan-500", "bg-amber-500", "bg-rose-500"][Math.floor(Math.random() * 8)],
-      workspaceId: currentWorkspaceId || "",
-      createdAt: new Date().toISOString()
-    };
-    setAllProjects(prev => [...prev, p]);
-    return p;
+  const addProject = async (name: string, color?: string) => {
+    if (!currentWorkspaceId) return;
+    try {
+      const colorVal = color || ["bg-black dark:bg-white text-white dark:text-black", "bg-emerald-500", "bg-orange-500", "bg-pink-500", "bg-violet-500", "bg-cyan-500", "bg-amber-500", "bg-rose-500"][Math.floor(Math.random() * 8)];
+      const proj = await projectService.addProject({
+        name,
+        color: colorVal,
+        workspace_id: currentWorkspaceId
+      });
+      const mapped: Project = {
+        id: proj.id,
+        name: proj.name,
+        color: proj.color,
+        workspaceId: proj.workspace_id,
+        createdAt: proj.created_at
+      };
+      setAllProjects(prev => [...prev, mapped]);
+      return mapped;
+    } catch (e) {
+      console.error("Add Project Error", e);
+    }
   };
 
-  const deleteProject = (id: string) => setAllProjects(p => p.filter(proj => proj.id !== id));
+  const deleteProject = async (id: string) => {
+    try {
+      await projectService.deleteProject(id);
+      setAllProjects(p => p.filter(proj => proj.id !== id));
+    } catch (e) {
+      console.error("Delete Project Error", e);
+    }
+  };
 
   const toggleTheme = () => setTheme(t => t === "light" ? "dark" : "light");
 
