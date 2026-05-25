@@ -51,6 +51,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Failed to delete workspace member: ${deleteErr.message}` }, { status: 500 });
     }
 
+    // 4. Delete the user from the profiles table
+    await admin
+      .from('profiles')
+      .delete()
+      .eq('id', userId);
+
+    // 5. Permanently delete the user from Supabase Auth users list
+    const { error: authDeleteErr } = await admin.auth.admin.deleteUser(userId);
+    if (authDeleteErr) {
+      console.warn('[remove-member] Auth delete warning:', authDeleteErr.message);
+    }
+
     return NextResponse.json({ success: true });
 
   } catch (err: any) {
