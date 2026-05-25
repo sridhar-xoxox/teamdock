@@ -228,12 +228,23 @@ CREATE POLICY "workspace_members: admin delete" ON public.workspace_members FOR 
 -- --- PROJECTS POLICIES ---
 DROP POLICY IF EXISTS "projects: member read" ON public.projects;
 DROP POLICY IF EXISTS "projects: member write" ON public.projects;
+DROP POLICY IF EXISTS "projects: member insert" ON public.projects;
+DROP POLICY IF EXISTS "projects: member update" ON public.projects;
+DROP POLICY IF EXISTS "projects: member delete" ON public.projects;
 
 CREATE POLICY "projects: member read" ON public.projects FOR SELECT
   TO authenticated
   USING (public.is_workspace_member(workspace_id, auth.uid()));
 
-CREATE POLICY "projects: member write" ON public.projects FOR ALL
+CREATE POLICY "projects: member insert" ON public.projects FOR INSERT
+  TO authenticated
+  WITH CHECK (public.is_workspace_member(workspace_id, auth.uid()));
+
+CREATE POLICY "projects: member update" ON public.projects FOR UPDATE
+  TO authenticated
+  USING (public.is_workspace_member(workspace_id, auth.uid()));
+
+CREATE POLICY "projects: member delete" ON public.projects FOR DELETE
   TO authenticated
   USING (public.is_workspace_member(workspace_id, auth.uid()));
 
