@@ -47,6 +47,17 @@ export const workspaceService = {
 
   async removeMember(workspaceId: string, userId: string) {
     try {
+      const res = await fetch('/api/remove-member', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workspaceId, userId }),
+      });
+      if (res.ok) return;
+    } catch (_) {
+      // fall through
+    }
+
+    try {
       const { error } = await supabase.rpc('remove_workspace_member', {
         p_workspace_id: workspaceId,
         p_user_id: userId
