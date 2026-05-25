@@ -1,0 +1,18 @@
+{
+  "name": "TeamDock — Collaborative Task Management",
+  "short_name": "TeamDock",
+  "description": "Real-time collaborative task manager for sprints, roles, and project notes.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1c1c1e",
+  "theme_color": "#10b981",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
+    }
+  ]
+}

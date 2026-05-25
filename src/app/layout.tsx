@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   title: "TeamDock — Collaborative Task Management",
   description: "Real-time collaborative to-do app with priorities, due dates, and team sync.",
 };
-export const viewport: Viewport = { themeColor: "#6366f1" };
+export const viewport: Viewport = { themeColor: "#10b981" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const themeScript = `
@@ -23,10 +23,26 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     })();
   `;
 
+  const swScript = `
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/sw.js').then(function(reg) {
+          console.log('SW scope:', reg.scope);
+        }).catch(function(err) {
+          console.log('SW failed:', err);
+        });
+      });
+    }
+  `;
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script dangerouslySetInnerHTML={{ __html: swScript }} />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="icon" href="/logo.svg" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/logo.svg" />
       </head>
       <body>
         <StoreProvider>{children}</StoreProvider>
