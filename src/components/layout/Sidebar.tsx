@@ -31,12 +31,16 @@ export default function Sidebar() {
 
   const pending = tasks.filter(t => !t.isCompleted).length;
 
-  const handleAddProject = () => {
+  const handleAddProject = async () => {
     const name = newProjectName.trim();
     if (name) {
-      addProject(name);
-      setNewProjectName("");
-      setAddingProject(false);
+      try {
+        await addProject(name);
+        setNewProjectName("");
+        setAddingProject(false);
+      } catch (e: any) {
+        console.error("Sidebar add project error:", e?.message);
+      }
     }
   };
 

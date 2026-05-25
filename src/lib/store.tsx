@@ -485,26 +485,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   };
 
   const addProject = async (name: string, color?: string) => {
-    if (!currentWorkspaceId) return;
-    try {
-      const colorVal = color || ["bg-black dark:bg-white text-white dark:text-black", "bg-emerald-500", "bg-orange-500", "bg-pink-500", "bg-violet-500", "bg-cyan-500", "bg-amber-500", "bg-rose-500"][Math.floor(Math.random() * 8)];
-      const proj = await projectService.addProject({
-        name,
-        color: colorVal,
-        workspace_id: currentWorkspaceId
-      });
-      const mapped: Project = {
-        id: proj.id,
-        name: proj.name,
-        color: proj.color,
-        workspaceId: proj.workspace_id,
-        createdAt: proj.created_at
-      };
-      setAllProjects(prev => [...prev, mapped]);
-      return mapped;
-    } catch (e) {
-      console.error("Add Project Error", e);
-    }
+    if (!currentWorkspaceId) throw new Error("No active workspace. Please create or join a workspace first.");
+    const colorVal = color || ["bg-emerald-500", "bg-orange-500", "bg-pink-500", "bg-violet-500", "bg-cyan-500", "bg-amber-500", "bg-rose-500", "bg-indigo-500"][Math.floor(Math.random() * 8)];
+    // May throw — caller handles the error
+    const proj = await projectService.addProject({
+      name,
+      color: colorVal,
+      workspace_id: currentWorkspaceId
+    });
+    const mapped: Project = {
+      id: proj.id,
+      name: proj.name,
+      color: proj.color,
+      workspaceId: proj.workspace_id,
+      createdAt: proj.created_at
+    };
+    setAllProjects(prev => [...prev, mapped]);
+    return mapped;
   };
 
   const deleteProject = async (id: string) => {
