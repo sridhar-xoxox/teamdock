@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-// Server-side route: accepts a workspace invitation using the service role key
-// This bypasses all RLS policies for the critical insert + delete operations
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,7 +12,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'inviteId and userId are required' }, { status: 400 });
     }
 
-    // Fetch the invitation (service role can always read this)
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+    if (!serviceKey || !supabaseUrl) {
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+    }
+
+    const admin = createClient(supabaseUrl, serviceKey);
+
+    // Fetch the invitation
     const { data: invite, error: ie } = await admin
       .from('invitations')
       .select('id, workspace_id, email, role, workspaces(id, name)')
@@ -41,13 +45,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Ensure profile exists (trigger may not have run yet if just signed up)
+    // Ensure profile exists
     await admin.from('profiles').upsert(
       { id: userId, email: user.email!, full_name: user.user_metadata?.full_name || null },
       { onConflict: 'id' }
     );
 
-    // Add user to workspace_members (bypassing RLS via service role)
+    // Add user to workspace_members
     const role = (invite.role as string).toLowerCase();
     const { error: me } = await admin
       .from('workspace_members')
