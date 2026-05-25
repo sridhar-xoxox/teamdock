@@ -26,13 +26,20 @@ export async function GET(req: NextRequest) {
 
   if (error || !data) return NextResponse.json(null);
 
+  // Validate the referenced workspace still exists
   const ws = data.workspaces as any;
+  if (!ws || !ws.id) {
+    // The workspace was deleted — clean up the orphaned invitation silently
+    await admin.from('invitations').delete().eq('id', data.id);
+    return NextResponse.json(null);
+  }
+
   return NextResponse.json({
     id: data.id,
     workspace_id: data.workspace_id,
     email: data.email,
     role: data.role,
     token: data.token,
-    workspaces: ws ? { id: ws.id, name: ws.name } : null,
+    workspaces: { id: ws.id, name: ws.name },
   });
 }

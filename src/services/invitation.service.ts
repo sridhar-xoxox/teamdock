@@ -41,7 +41,8 @@ export const invitationService = {
   async getPendingInvite(email: string) {
     try {
       const res = await fetch(
-        `/api/invite-lookup?email=${encodeURIComponent(email.toLowerCase())}`
+        `/api/invite-lookup?email=${encodeURIComponent(email.toLowerCase())}`,
+        { cache: 'no-store' }
       );
       if (res.ok) {
         const data = await res.json();
