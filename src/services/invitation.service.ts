@@ -38,30 +38,30 @@ export const invitationService = {
 
   // Check if an email has a pending invite (called during signup)
   async getPendingInvite(email: string) {
-    const { data, error } = await supabase.from('invitations')
-      .select('*, workspaces(id, name)')
-      .eq('email', email.toLowerCase())
-      .maybeSingle();
-    if (error) return null;
-    return data;
+    const { data, error } = await supabase.rpc('get_pending_invite_by_email', {
+      p_email: email.toLowerCase()
+    });
+    if (error || !data) return null;
+    const raw = data as any;
+    return {
+      id: raw.id,
+      workspace_id: raw.workspace_id,
+      email: raw.email,
+      role: raw.role,
+      token: raw.token,
+      workspaces: {
+        id: raw.workspace_id,
+        name: raw.workspace_name
+      }
+    };
   },
 
   // Accept invite: add user to workspace_members and delete the invite
-  async acceptInvite(inviteId: string, workspaceId: string, userId: string, role: string, email: string) {
-    // Add to workspace_members
-    const { error: memberError } = await supabase.from('workspace_members')
-      .upsert({ 
-        workspace_id: workspaceId, 
-        user_id: userId, 
-        role: role as any 
-      }, { onConflict: 'workspace_id,user_id' });
-    if (memberError) throw memberError;
-
-    // Delete the invite
-    await supabase.from('invitations')
-      .delete()
-      .eq('id', inviteId);
-
-    return true;
+  async acceptInvite(inviteId: string) {
+    const { data, error } = await supabase.rpc('accept_workspace_invite', {
+      p_invite_id: inviteId
+    });
+    if (error) throw error;
+    return data;
   }
 };

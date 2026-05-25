@@ -274,6 +274,18 @@ export interface Database {
         }
         Returns: undefined
       }
+      accept_workspace_invite: {
+        Args: {
+          p_invite_id: string
+        }
+        Returns: Json
+      }
+      get_pending_invite_by_email: {
+        Args: {
+          p_email: string
+        }
+        Returns: Json
+      }
     }
   }
 }

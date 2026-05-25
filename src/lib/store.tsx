@@ -354,13 +354,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
 
     if (inviteId) {
-      await invitationService.acceptInvite(
-        inviteId, 
-        wsId, 
-        member.id, 
-        invite.role.toLowerCase(), 
-        invite.email
-      );
+      await invitationService.acceptInvite(inviteId);
     }
     
     const newMember = { ...member, workspaceId: wsId, role: invite.role };
