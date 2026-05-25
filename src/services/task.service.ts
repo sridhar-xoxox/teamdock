@@ -21,7 +21,7 @@ export const taskService = {
   async addTask(task: NewTask) {
     const { data, error } = await supabase
       .from('tasks')
-      .insert(task as any)
+      .insert(task)
       .select()
       .single();
 
@@ -30,9 +30,9 @@ export const taskService = {
   },
 
   async updateTask(id: string, updates: Partial<Task>) {
-    const { data, error } = await (supabase
-      .from('tasks') as any)
-      .update(updates)
+    const { data, error } = await supabase
+      .from('tasks')
+      .update(updates as any) // Postgres updates parameter may expect a specific schema
       .eq('id', id)
       .select()
       .single();

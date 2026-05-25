@@ -14,13 +14,19 @@ export const authService = {
     if (error) throw error;
 
     // Manually upsert the profile immediately after signup
-    // because the DB trigger may have a slight delay
+    // because the DB trigger may have a slight delay.
+    // Wrap in try-catch so unauthenticated signups (e.g. when email confirmation is enabled)
+    // do not crash the signup process.
     if (data.user) {
-      await (supabase.from('profiles') as any).upsert({
-        id: data.user.id,
-        email: email,
-        full_name: fullName,
-      }, { onConflict: 'id' });
+      try {
+        await (supabase.from('profiles') as any).upsert({
+          id: data.user.id,
+          email: email,
+          full_name: fullName,
+        }, { onConflict: 'id' });
+      } catch (err) {
+        console.warn('Manual profile upsert skipped (handled by DB trigger):', err);
+      }
     }
 
     return data;

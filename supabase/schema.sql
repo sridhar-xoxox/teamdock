@@ -109,7 +109,9 @@ CREATE TABLE IF NOT EXISTS public.invitations (
   email        text NOT NULL,
   role         text NOT NULL DEFAULT 'member' CHECK (role IN ('admin', 'manager', 'member')),
   token        text NOT NULL UNIQUE DEFAULT gen_random_uuid()::text,
-  expires_at   timestamptz NOT NULL DEFAULT (now() + interval '7 days')
+  invited_by   uuid REFERENCES public.profiles(id) ON DELETE CASCADE,
+  expires_at   timestamptz NOT NULL DEFAULT (now() + interval '7 days'),
+  UNIQUE (workspace_id, email)
 );
 
 ALTER TABLE public.invitations ENABLE ROW LEVEL SECURITY;

@@ -4,7 +4,7 @@ const supabase = createClient();
 
 export const workspaceService = {
   async createWorkspace(name: string, userId: string) {
-    const { data: workspace, error } = await (supabase.rpc as any)('create_workspace_with_member', {
+    const { data: workspace, error } = await supabase.rpc('create_workspace_with_member', {
       p_name: name,
       p_owner_id: userId
     });
@@ -37,15 +37,16 @@ export const workspaceService = {
   },
 
   async updateMemberRole(workspaceId: string, userId: string, role: string) {
-    const { error } = await (supabase.from('workspace_members') as any)
-      .update({ role: role.toLowerCase() })
+    const { error } = await supabase
+      .from('workspace_members')
+      .update({ role: role.toLowerCase() as any })
       .eq('workspace_id', workspaceId)
       .eq('user_id', userId);
     if (error) throw error;
   },
 
   async removeMember(workspaceId: string, userId: string) {
-    const { error } = await (supabase.rpc as any)('remove_workspace_member', {
+    const { error } = await supabase.rpc('remove_workspace_member', {
       p_workspace_id: workspaceId,
       p_user_id: userId
     });

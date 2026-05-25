@@ -5,11 +5,11 @@ const supabase = createClient();
 export const invitationService = {
   // Save invite to Supabase
   async createInvite(workspaceId: string, email: string, role: string, invitedBy: string) {
-    const { data, error } = await (supabase.from('invitations') as any)
+    const { data, error } = await supabase.from('invitations')
       .upsert({ 
         workspace_id: workspaceId, 
         email: email.toLowerCase(), 
-        role: role.toLowerCase(), 
+        role: role.toLowerCase() as any, 
         invited_by: invitedBy 
       }, { onConflict: 'workspace_id,email' })
       .select()
@@ -20,7 +20,7 @@ export const invitationService = {
 
   // Fetch all invites for a workspace
   async getInvites(workspaceId: string) {
-    const { data, error } = await (supabase.from('invitations') as any)
+    const { data, error } = await supabase.from('invitations')
       .select('*')
       .eq('workspace_id', workspaceId);
     if (error) throw error;
@@ -29,7 +29,7 @@ export const invitationService = {
 
   // Delete an invite
   async deleteInvite(workspaceId: string, email: string) {
-    const { error } = await (supabase.from('invitations') as any)
+    const { error } = await supabase.from('invitations')
       .delete()
       .eq('workspace_id', workspaceId)
       .eq('email', email.toLowerCase());
@@ -38,7 +38,7 @@ export const invitationService = {
 
   // Check if an email has a pending invite (called during signup)
   async getPendingInvite(email: string) {
-    const { data, error } = await (supabase.from('invitations') as any)
+    const { data, error } = await supabase.from('invitations')
       .select('*, workspaces(id, name)')
       .eq('email', email.toLowerCase())
       .maybeSingle();
@@ -49,12 +49,16 @@ export const invitationService = {
   // Accept invite: add user to workspace_members and delete the invite
   async acceptInvite(inviteId: string, workspaceId: string, userId: string, role: string, email: string) {
     // Add to workspace_members
-    const { error: memberError } = await (supabase.from('workspace_members') as any)
-      .upsert({ workspace_id: workspaceId, user_id: userId, role }, { onConflict: 'workspace_id,user_id' });
+    const { error: memberError } = await supabase.from('workspace_members')
+      .upsert({ 
+        workspace_id: workspaceId, 
+        user_id: userId, 
+        role: role as any 
+      }, { onConflict: 'workspace_id,user_id' });
     if (memberError) throw memberError;
 
     // Delete the invite
-    await (supabase.from('invitations') as any)
+    await supabase.from('invitations')
       .delete()
       .eq('id', inviteId);
 
