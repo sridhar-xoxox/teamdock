@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
-import { Users, MoreHorizontal, Shield, Clock, Plus, X, Search, Info, LayoutGrid } from "lucide-react";
+import { Users, MoreHorizontal, Shield, Clock, Plus, X, Search, Info, LayoutGrid, Trash2 } from "lucide-react";
 
 const ROLES = [
   "Admin",
@@ -11,7 +11,7 @@ const ROLES = [
 ];
 
 export default function TeamPage() {
-  const { members, tasks, invites, addInvite, removeInvite, currentUser, updateMemberRole } = useStore();
+  const { members, tasks, invites, addInvite, removeInvite, currentUser, updateMemberRole, removeMember } = useStore();
   const [activeTab, setActiveTab] = useState<"all" | "admins" | "pending">("all");
   const [showInviteForm, setShowInviteForm] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
@@ -227,9 +227,15 @@ export default function TeamPage() {
                       <Shield className="h-4 w-4 text-slate-300" />
                     </div>
                   )}
-                  <button className="p-2 hover:bg-slate-200 dark:hover:bg-white/10 rounded-full text-slate-400 transition-colors">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </button>
+                  {isAdmin && member.id !== currentUser?.id && (
+                    <button
+                      onClick={() => removeMember(member.id)}
+                      className="p-2 hover:bg-rose-500/10 rounded-full text-rose-500 transition-colors active:scale-95"
+                      title="Remove Member"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
 
 

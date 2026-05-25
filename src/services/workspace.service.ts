@@ -46,10 +46,21 @@ export const workspaceService = {
   },
 
   async removeMember(workspaceId: string, userId: string) {
-    const { error } = await supabase.rpc('remove_workspace_member', {
-      p_workspace_id: workspaceId,
-      p_user_id: userId
-    });
+    try {
+      const { error } = await supabase.rpc('remove_workspace_member', {
+        p_workspace_id: workspaceId,
+        p_user_id: userId
+      });
+      if (!error) return;
+    } catch (_) {
+      // fall through
+    }
+    // Fallback: direct table deletion
+    const { error } = await supabase
+      .from('workspace_members')
+      .delete()
+      .eq('workspace_id', workspaceId)
+      .eq('user_id', userId);
     if (error) throw error;
   }
 };

@@ -13,9 +13,10 @@ interface TaskListItemProps {
 }
 
 export function TaskListItem({ task, assignee, onToggleComplete, onDelete, onSelect, onPriorityChange }: TaskListItemProps) {
-  const { projects } = useStore();
+  const { projects, currentUser } = useStore();
   const project = projects.find(p => p.id === task.projectId);
   const isHigh = task.priority === "HIGH";
+  const isAdmin = currentUser?.role?.toLowerCase() === "admin";
   const formattedDate = task.dueDate
     ? new Date(task.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })
     : "";
@@ -84,9 +85,11 @@ export function TaskListItem({ task, assignee, onToggleComplete, onDelete, onSel
           <button onClick={() => onToggleComplete(task.id, !task.isCompleted)} className="p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500 transition-colors" title={task.isCompleted ? "Mark as TODO" : "Archive"}>
             {task.isCompleted ? <Clock className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
           </button>
-          <button onClick={() => onDelete(task.id)} className="p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500 transition-colors" title="Delete">
-            <Trash2 className="h-4 w-4" />
-          </button>
+          {isAdmin && (
+            <button onClick={() => onDelete(task.id)} className="p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500 transition-colors" title="Delete">
+              <Trash2 className="h-4 w-4" />
+            </button>
+          )}
           <button className="p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500 transition-colors">
             <MoreVertical className="h-4 w-4" />
           </button>

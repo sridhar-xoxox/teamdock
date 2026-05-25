@@ -19,6 +19,7 @@ export default function TaskDetailModal({ task: initialTask, onClose }: Props) {
   
   const assignee = members.find(m => m.id === task.assigneeId);
   const isHigh = task.priority === "HIGH";
+  const isAdmin = currentUser?.role?.toLowerCase() === "admin";
 
   const dateObj = task.dueDate ? new Date(task.dueDate) : null;
   const isOverdue = dateObj && dateObj < new Date() && !task.isCompleted;
@@ -69,9 +70,11 @@ export default function TaskDetailModal({ task: initialTask, onClose }: Props) {
             <button onClick={toggleComplete} className={cn("p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-full", task.isCompleted ? "text-emerald-500" : "text-slate-500")} title="Mark as done">
               <Archive className="h-5 w-5" />
             </button>
-            <button onClick={handleDelete} className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-full text-slate-500" title="Delete">
-              <Trash2 className="h-5 w-5" />
-            </button>
+            {isAdmin && (
+              <button onClick={handleDelete} className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-full text-slate-500" title="Delete">
+                <Trash2 className="h-5 w-5" />
+              </button>
+            )}
             <button className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-full text-slate-500" title="Snooze">
               <Clock className="h-5 w-5" />
             </button>

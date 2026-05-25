@@ -23,6 +23,8 @@ export default function Sidebar() {
 
   const isAdmin = currentUser?.role?.toLowerCase() === "admin";
   const isMember = currentUser?.role?.toLowerCase() === "member";
+  const isManager = currentUser?.role?.toLowerCase() === "manager";
+  const canCreateProject = isAdmin || isManager;
 
   const [addingProject, setAddingProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
@@ -92,7 +94,7 @@ export default function Sidebar() {
       <div className="flex-1 mt-6 px-3 flex flex-col min-h-0 overflow-hidden">
         <div className="flex items-center justify-between px-3 mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
           <span>Projects</span>
-          {isAdmin && (
+          {canCreateProject && (
             <button
               onClick={() => setAddingProject(true)}
               className="rounded-md p-0.5 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white transition-colors"

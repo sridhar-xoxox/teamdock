@@ -102,6 +102,7 @@ interface Ctx {
   getMemberByEmail: (email: string) => Member | undefined;
   getInviteByEmail: (email: string) => Invite | undefined;
   updateMemberRole: (id: string, role: string) => void;
+  removeMember: (id: string) => Promise<void>;
   addTaskComment: (taskId: string, memberId: string, text: string) => void;
   allTasks: Task[];
   allMembers: Member[];
@@ -368,7 +369,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const currentWorkspaceId = currentUser?.workspaceId;
   const activeWorkspace = workspaces.find(w => w.id === currentWorkspaceId);
 
-  const tasks = allTasks.filter(t => t.workspaceId === currentWorkspaceId);
+  const tasks = allTasks.filter(t => {
+    if (t.workspaceId !== currentWorkspaceId) return false;
+    const isMember = currentUser?.role?.toLowerCase() === "member";
+    if (isMember) {
+      return t.assigneeId === currentUser?.id;
+    }
+    return true;
+  });
   const members = allMembers.filter(m => m.workspaceId === currentWorkspaceId);
   const invites = allInvites.filter(i => i.workspaceId === currentWorkspaceId);
   const projects = allProjects.filter(p => p.workspaceId === currentWorkspaceId);
@@ -513,10 +521,28 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const getMemberByEmail = (email: string) => allMembers.find(m => m.email === email);
   const getInviteByEmail = (email: string) => allInvites.find(i => i.email === email);
 
-  const updateMemberRole = (id: string, role: string) => {
-    setAllMembers(p => p.map(m => m.id === id ? { ...m, role } : m));
+  const updateMemberRole = async (id: string, role: string) => {
+    try {
+      if (currentWorkspaceId) {
+        await workspaceService.updateMemberRole(currentWorkspaceId, id, role);
+      }
+    } catch (e) {
+      console.error("Update Member Role Persist Error", e);
+    }
+    setAllMembers(p => p.map(m => m.id === id ? { ...m, role: role as any } : m));
     if (currentUser?.id === id) setCurrentUser(p => p ? { ...p, role } : null);
     setSessions(p => p.map(s => s.id === id ? { ...s, role } : s));
+  };
+
+  const removeMember = async (id: string) => {
+    if (!currentWorkspaceId) return;
+    try {
+      await workspaceService.removeMember(currentWorkspaceId, id);
+      setAllMembers(p => p.filter(m => m.id !== id));
+      setAllTasks(p => p.map(t => t.assigneeId === id ? { ...t, assigneeId: undefined } : t));
+    } catch (e) {
+      console.error("Remove Member Error", e);
+    }
   };
 
   const addTaskComment = (taskId: string, memberId: string, text: string) => {
@@ -539,7 +565,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       addTask, updateTask, deleteTask, moveTask,
       projects, addProject, deleteProject,
       theme, toggleTheme,
-      getMemberByEmail, getInviteByEmail, updateMemberRole, addTaskComment,
+      getMemberByEmail, getInviteByEmail, updateMemberRole, removeMember, addTaskComment,
       allTasks, allMembers, loading
     }}> {children} </StoreCtx.Provider>
   );

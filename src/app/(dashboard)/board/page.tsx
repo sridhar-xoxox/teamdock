@@ -108,6 +108,8 @@ export default function DashboardPage() {
 
   const isAdmin = currentUser?.role?.toLowerCase() === "admin";
   const isMember = currentUser?.role?.toLowerCase() === "member";
+  const isManager = currentUser?.role?.toLowerCase() === "manager";
+  const canCreateProject = isAdmin || isManager;
 
   // Calculated stats
   const realProjectsCount = projects.length;
@@ -278,7 +280,7 @@ export default function DashboardPage() {
             {/* Projects Section Card */}
             <div className="p-5 md:p-7 rounded-[32px] bg-white dark:bg-[#1a1f2e] border border-slate-100 dark:border-white/5 shadow-sm">
               <SectionHeader title="Projects" count={filteredProjects.length}>
-                {isAdmin && (
+                {canCreateProject && (
                   <button
                     onClick={() => { setAddingProject(true); setNewProjectName(""); }}
                     className="p-2 rounded-xl bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 hover:scale-105 active:scale-95 transition-all"
