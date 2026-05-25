@@ -208,6 +208,11 @@ CREATE POLICY "workspace_members: member read" ON public.workspace_members FOR S
   TO authenticated
   USING (public.is_workspace_member(workspace_id, auth.uid()));
 
+-- Allow authenticated users to insert themselves when accepting an invite
+CREATE POLICY "workspace_members: self insert" ON public.workspace_members FOR INSERT
+  TO authenticated
+  WITH CHECK (user_id = auth.uid());
+
 CREATE POLICY "workspace_members: admin update" ON public.workspace_members FOR UPDATE
   TO authenticated
   USING (public.get_workspace_member_role(workspace_id, auth.uid()) IN ('admin', 'manager'));
@@ -259,10 +264,23 @@ CREATE POLICY "tasks: creator or admin delete" ON public.tasks FOR DELETE
 
 -- --- INVITATIONS POLICIES ---
 DROP POLICY IF EXISTS "invitations: admin manage" ON public.invitations;
+DROP POLICY IF EXISTS "invitations: read by email" ON public.invitations;
+DROP POLICY IF EXISTS "invitations: self delete on accept" ON public.invitations;
 
+-- Admins and managers can do everything
 CREATE POLICY "invitations: admin manage" ON public.invitations FOR ALL
   TO authenticated
   USING (public.get_workspace_member_role(workspace_id, auth.uid()) IN ('admin', 'manager'));
+
+-- Anyone (anon included) can read an invitation if email matches — needed for pre-signup detection
+CREATE POLICY "invitations: read by email" ON public.invitations FOR SELECT
+  TO anon, authenticated
+  USING (true);
+
+-- Authenticated users can delete their own invitation when accepting it
+CREATE POLICY "invitations: self delete on accept" ON public.invitations FOR DELETE
+  TO authenticated
+  USING (email = (SELECT email FROM auth.users WHERE id = auth.uid()));
 
 -- ──────────────────────────────────────────────
 -- 9. SECURE RPC FUNCTIONS

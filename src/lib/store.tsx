@@ -346,15 +346,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
     let inviteId = invite.id;
     if (!inviteId) {
-      // Fetch invite id if missing
       const pending = await invitationService.getPendingInvite(invite.email);
-      if (pending) {
-        inviteId = pending.id;
-      }
+      if (pending) inviteId = pending.id;
     }
 
     if (inviteId) {
-      await invitationService.acceptInvite(inviteId);
+      await invitationService.acceptInvite(
+        inviteId,
+        wsId,
+        member.id,
+        invite.role
+      );
     }
     
     const newMember = { ...member, workspaceId: wsId, role: invite.role };

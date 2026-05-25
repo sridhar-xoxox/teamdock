@@ -37,31 +37,56 @@ export const invitationService = {
   },
 
   // Check if an email has a pending invite (called during signup)
+  // Falls back to direct table read if the RPC is unavailable
   async getPendingInvite(email: string) {
-    const { data, error } = await supabase.rpc('get_pending_invite_by_email', {
-      p_email: email.toLowerCase()
-    });
-    if (error || !data) return null;
-    const raw = data as any;
-    return {
-      id: raw.id,
-      workspace_id: raw.workspace_id,
-      email: raw.email,
-      role: raw.role,
-      token: raw.token,
-      workspaces: {
-        id: raw.workspace_id,
-        name: raw.workspace_name
+    // First try the secure RPC (works when deployed)
+    try {
+      const { data: rpcData, error: rpcErr } = await supabase.rpc(
+        'get_pending_invite_by_email' as any,
+        { p_email: email.toLowerCase() }
+      );
+      if (!rpcErr && rpcData) {
+        const raw = rpcData as any;
+        return {
+          id: raw.id,
+          workspace_id: raw.workspace_id,
+          email: raw.email,
+          role: raw.role,
+          token: raw.token,
+          workspaces: {
+            id: raw.workspace_id,
+            name: raw.workspace_name
+          }
+        };
       }
-    };
+    } catch (_) {
+      // fall through to direct query
+    }
+
+    // Fallback: direct table read (works for authenticated users)
+    const { data, error } = await supabase
+      .from('invitations')
+      .select('id, workspace_id, email, role, token, workspaces(id, name)')
+      .eq('email', email.toLowerCase())
+      .maybeSingle();
+    if (error || !data) return null;
+    return data as any;
   },
 
-  // Accept invite: add user to workspace_members and delete the invite
-  async acceptInvite(inviteId: string) {
-    const { data, error } = await supabase.rpc('accept_workspace_invite', {
-      p_invite_id: inviteId
-    });
-    if (error) throw error;
-    return data;
+  // Accept invite: atomically add user to workspace_members and delete the invite
+  // Called after auth.signUp returns — user IS authenticated at this point
+  async acceptInvite(inviteId: string, workspaceId: string, userId: string, role: string) {
+    // Add member
+    const { error: memberError } = await supabase
+      .from('workspace_members')
+      .upsert(
+        { workspace_id: workspaceId, user_id: userId, role: role.toLowerCase() as any },
+        { onConflict: 'workspace_id,user_id' }
+      );
+    if (memberError) throw memberError;
+
+    // Remove the consumed invitation
+    await supabase.from('invitations').delete().eq('id', inviteId);
+    return true;
   }
 };

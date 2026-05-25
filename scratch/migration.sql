@@ -1,104 +1,35 @@
--- 1. Remove insecure self-insert policy for workspace members
+-- =====================================================
+-- TeamDock Invite Flow Fix
+-- Paste this in: Supabase Dashboard → SQL Editor → Run
+-- =====================================================
+
+-- STEP 1: Restore self-insert policy on workspace_members
+-- (Needed so invited users can add themselves on accept)
 DROP POLICY IF EXISTS "workspace_members: self insert" ON public.workspace_members;
+CREATE POLICY "workspace_members: self insert" ON public.workspace_members FOR INSERT
+  TO authenticated
+  WITH CHECK (user_id = auth.uid());
 
--- 1.5. Clean up old function signatures to prevent overloading
-DROP FUNCTION IF EXISTS public.accept_workspace_invite(uuid);
-DROP FUNCTION IF EXISTS public.accept_workspace_invite(text);
-DROP FUNCTION IF EXISTS public.get_pending_invite_by_email(text);
+-- STEP 2: Fix invitations policies
+-- Allow pre-signup email lookup (anon) + admins to manage
+DROP POLICY IF EXISTS "invitations: admin manage" ON public.invitations;
+DROP POLICY IF EXISTS "invitations: read by email" ON public.invitations;
+DROP POLICY IF EXISTS "invitations: self delete on accept" ON public.invitations;
 
--- 2. Create accept_workspace_invite function
-CREATE OR REPLACE FUNCTION public.accept_workspace_invite(
-  p_invite_id uuid
-)
-RETURNS json
-LANGUAGE plpgsql
-SECURITY DEFINER SET search_path = public
-AS $$
-DECLARE
-  v_workspace_id uuid;
-  v_email text;
-  v_role text;
-  v_invited_by uuid;
-  v_user_id uuid;
-  v_result json;
-BEGIN
-  v_user_id := auth.uid();
-  IF v_user_id IS NULL THEN
-    RAISE EXCEPTION 'Not authenticated';
-  END IF;
+-- Admins/managers: full control
+CREATE POLICY "invitations: admin manage" ON public.invitations FOR ALL
+  TO authenticated
+  USING (public.get_workspace_member_role(workspace_id, auth.uid()) IN ('admin', 'manager'));
 
-  SELECT workspace_id, email, role, invited_by INTO v_workspace_id, v_email, v_role, v_invited_by
-  FROM public.invitations
-  WHERE id = p_invite_id;
+-- Anyone can read invitations (allows pre-signup detection by email)
+CREATE POLICY "invitations: read by email" ON public.invitations FOR SELECT
+  TO anon, authenticated
+  USING (true);
 
-  IF v_workspace_id IS NULL THEN
-    RAISE EXCEPTION 'Invitation not found';
-  END IF;
+-- Invited user can delete their own invite when accepting
+CREATE POLICY "invitations: self delete on accept" ON public.invitations FOR DELETE
+  TO authenticated
+  USING (email = (SELECT email FROM auth.users WHERE id = auth.uid()));
 
-  IF LOWER((SELECT email FROM auth.users WHERE id = v_user_id)) <> LOWER(v_email) THEN
-    RAISE EXCEPTION 'Permission denied: email mismatch';
-  END IF;
-
-  INSERT INTO public.profiles (id, email, full_name)
-  VALUES (
-    v_user_id,
-    v_email,
-    COALESCE(
-      (SELECT raw_user_meta_data->>'full_name' FROM auth.users WHERE id = v_user_id),
-      'New User'
-    )
-  )
-  ON CONFLICT (id) DO NOTHING;
-
-  INSERT INTO public.workspace_members (workspace_id, user_id, role, invited_by, joined_at)
-  VALUES (v_workspace_id, v_user_id, v_role::text, v_invited_by, now())
-  ON CONFLICT (workspace_id, user_id) DO NOTHING;
-
-  DELETE FROM public.invitations WHERE id = p_invite_id;
-
-  SELECT json_build_object(
-    'id', w.id,
-    'name', w.name,
-    'owner_id', w.owner_id,
-    'created_at', w.created_at,
-    'role', v_role
-  ) INTO v_result
-  FROM public.workspaces w
-  WHERE w.id = v_workspace_id;
-
-  RETURN v_result;
-END;
-$$;
-
--- 3. Create get_pending_invite_by_email function
-CREATE OR REPLACE FUNCTION public.get_pending_invite_by_email(
-  p_email text
-)
-RETURNS json
-LANGUAGE plpgsql
-SECURITY DEFINER SET search_path = public
-AS $$
-DECLARE
-  v_result json;
-BEGIN
-  SELECT json_build_object(
-    'id', i.id,
-    'workspace_id', i.workspace_id,
-    'email', i.email,
-    'role', i.role,
-    'token', i.token,
-    'workspace_name', w.name
-  ) INTO v_result
-  FROM public.invitations i
-  JOIN public.workspaces w ON w.id = i.workspace_id
-  WHERE LOWER(i.email) = LOWER(p_email)
-  LIMIT 1;
-
-  RETURN v_result;
-END;
-$$;
-
--- 4. Grant execute permissions
-GRANT EXECUTE ON FUNCTION public.accept_workspace_invite(uuid) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.get_pending_invite_by_email(text) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.get_pending_invite_by_email(text) TO anon;
+-- STEP 3: Notify PostgREST to reload schema cache
+NOTIFY pgrst, 'reload schema';
