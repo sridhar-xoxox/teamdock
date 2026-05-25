@@ -36,57 +36,38 @@ export const invitationService = {
     if (error) throw error;
   },
 
-  // Check if an email has a pending invite (called during signup)
-  // Falls back to direct table read if the RPC is unavailable
+  // Check if an email has a pending invite — uses server-side API route with service role
+  // so workspace names are visible even to unauthenticated users
   async getPendingInvite(email: string) {
-    // First try the secure RPC (works when deployed)
     try {
-      const { data: rpcData, error: rpcErr } = await supabase.rpc(
-        'get_pending_invite_by_email' as any,
-        { p_email: email.toLowerCase() }
+      const res = await fetch(
+        `/api/invite-lookup?email=${encodeURIComponent(email.toLowerCase())}`
       );
-      if (!rpcErr && rpcData) {
-        const raw = rpcData as any;
-        return {
-          id: raw.id,
-          workspace_id: raw.workspace_id,
-          email: raw.email,
-          role: raw.role,
-          token: raw.token,
-          workspaces: {
-            id: raw.workspace_id,
-            name: raw.workspace_name
-          }
-        };
+      if (res.ok) {
+        const data = await res.json();
+        return data; // already shaped correctly by the API route
       }
     } catch (_) {
-      // fall through to direct query
+      // fall through
     }
-
-    // Fallback: direct table read (works for authenticated users)
-    const { data, error } = await supabase
+    // Fallback: direct table read (may lack workspace name if anon)
+    const { data } = await supabase
       .from('invitations')
-      .select('id, workspace_id, email, role, token, workspaces(id, name)')
+      .select('id, workspace_id, email, role, token')
       .eq('email', email.toLowerCase())
       .maybeSingle();
-    if (error || !data) return null;
-    return data as any;
+    return data ? { ...data, workspaces: null } : null;
   },
 
-  // Accept invite: atomically add user to workspace_members and delete the invite
-  // Called after auth.signUp returns — user IS authenticated at this point
-  async acceptInvite(inviteId: string, workspaceId: string, userId: string, role: string) {
-    // Add member
-    const { error: memberError } = await supabase
-      .from('workspace_members')
-      .upsert(
-        { workspace_id: workspaceId, user_id: userId, role: role.toLowerCase() as any },
-        { onConflict: 'workspace_id,user_id' }
-      );
-    if (memberError) throw memberError;
-
-    // Remove the consumed invitation
-    await supabase.from('invitations').delete().eq('id', inviteId);
-    return true;
+  // Accept invite — uses server-side API route with service role to bypass RLS
+  async acceptInvite(inviteId: string, _workspaceId: string, userId: string, _role: string) {
+    const res = await fetch('/api/accept-invite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ inviteId, userId }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to accept invitation');
+    return data;
   }
 };
