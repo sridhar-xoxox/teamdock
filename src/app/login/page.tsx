@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Zap, Eye, EyeOff, ArrowRight, ShieldCheck, Sparkles, CheckCircle2, Lock, Mail, User, HelpCircle, X } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { Logo } from "@/components/ui/Logo";
@@ -12,9 +12,16 @@ const COLORS = ["#34a86d", "#10b981", "#db2777", "#7c3aed", "#0d9488", "#2563eb"
 
 export default function LoginPage() {
   const router = useRouter();
-  const { getInviteByEmail, joinWorkspace } = useStore();
+  const pathname = usePathname();
+  const { getInviteByEmail, joinWorkspace, currentUser, loading: storeLoading } = useStore();
   
-  const [isSignUp, setIsSignUp] = useState(false);
+  React.useEffect(() => {
+    if (!storeLoading && currentUser && currentUser.workspaceId) {
+      router.push("/board");
+    }
+  }, [currentUser, storeLoading, router]);
+
+  const [isSignUp, setIsSignUp] = useState(pathname === "/signup");
   const [name, setName] = useState("");
   const [showInfo, setShowInfo] = useState(false);
   const [email, setEmail] = useState("");
@@ -23,6 +30,16 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Forgot Password States
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotSuccess, setForgotSuccess] = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotError, setForgotError] = useState("");
+  
+  // Email Confirmation States
+  const [showEmailConfirmSent, setShowEmailConfirmSent] = useState(false);
 
   const [pendingInvite, setPendingInvite] = useState<any>(null);
   const [checkingInvite, setCheckingInvite] = useState(false);
@@ -53,6 +70,27 @@ export default function LoginPage() {
     return () => clearTimeout(timer);
   }, [email]);
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotError("");
+    
+    if (!forgotEmail.trim()) {
+      setForgotError("Please enter your email address.");
+      return;
+    }
+    
+    setForgotLoading(true);
+    try {
+      await authService.resetPassword(forgotEmail.trim());
+      setForgotSuccess(true);
+    } catch (err: any) {
+      console.error("Forgot password error:", err);
+      setForgotError(err.message || "Something went wrong. Please check your credentials.");
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -81,44 +119,56 @@ export default function LoginPage() {
         }
 
         // 1. Sign Up in Supabase
-        const authData = await authService.signUp(email.trim(), password, name.trim());
+        const authData = await authService.signUp(
+          email.trim(), 
+          password, 
+          name.trim(),
+          {
+            pendingWorkspaceName: hasInvite ? undefined : workspaceName.trim(),
+            pendingInviteId: hasInvite && pendingInvite ? pendingInvite.id : undefined
+          }
+        );
         
         if (!authData?.user) {
           throw new Error("Unable to create account. Please try again.");
         }
 
-        // 2. Create Workspace directly if there is no invite
-        if (!hasInvite) {
-          await workspaceService.createWorkspace(workspaceName.trim(), authData.user.id);
-        } else {
-          // If they have an invite, let's join them
-          if (pendingInvite) {
-            const randomColor = COLORS[Math.floor(Math.random() * COLORS.length)];
-            const displayName = name.trim();
-            const initials = displayName.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
-            
-            const newMemberBase = {
-              id: authData.user.id,
-              name: displayName,
-              email: email.trim(),
-              role: pendingInvite.role,
-              initials,
-              color: randomColor
-            };
+        // Check if session exists (email confirmation is disabled on Supabase)
+        if (authData.session) {
+          // 2. Create Workspace directly if there is no invite
+          if (!hasInvite) {
+            await workspaceService.createWorkspace(workspaceName.trim(), authData.user.id);
+          } else {
+            // If they have an invite, let's join them
+            if (pendingInvite) {
+              const randomColor = COLORS[Math.floor(Math.random() * COLORS.length)];
+              const displayName = name.trim();
+              const initials = displayName.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
+              
+              const newMemberBase = {
+                id: authData.user.id,
+                name: displayName,
+                email: email.trim(),
+                role: pendingInvite.role,
+                initials,
+                color: randomColor
+              };
 
-            const mappedInvite = {
-              id: pendingInvite.id,
-              email: pendingInvite.email,
-              role: pendingInvite.role,
-              workspaceId: pendingInvite.workspace_id
-            };
+              const mappedInvite = {
+                id: pendingInvite.id,
+                email: pendingInvite.email,
+                role: pendingInvite.role,
+                workspaceId: pendingInvite.workspace_id
+              };
 
-            await joinWorkspace(mappedInvite, newMemberBase);
+              await joinWorkspace(mappedInvite, newMemberBase);
+            }
           }
+          window.location.href = "/board";
+        } else {
+          // Email confirmation is enabled in Supabase! (Option A)
+          setShowEmailConfirmSent(true);
         }
-        
-        // Redirect cleanly and force store re-init
-        window.location.href = "/board";
       } else {
         // Sign in using Supabase Auth
         await authService.signIn(email.trim(), password);
@@ -170,122 +220,244 @@ export default function LoginPage() {
 
           {/* Form Content */}
           <div className="flex-1 max-w-sm w-full mx-auto flex flex-col justify-center">
-            <div className="mb-8">
-              <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight mb-2">
-                {isSignUp ? "Create Workspace" : "Welcome Back"}
-              </h1>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                {isSignUp 
-                  ? "Build your collaborative playground in seconds." 
-                  : "Collaborate instantly on projects and milestones."}
-              </p>
-            </div>
-
-            <form onSubmit={handleAuth} className="space-y-4">
-              <div className="relative">
-                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
-                  <Mail className="h-4.5 w-4.5" />
+            {showForgotPassword ? (
+              <div>
+                <div className="mb-8">
+                  <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight mb-2">
+                    Forgot Password
+                  </h1>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 font-semibold leading-relaxed">
+                    Enter your email address and we'll send you a secure link to reset your password.
+                  </p>
                 </div>
-                <input
-                  type="email"
-                  placeholder="Email Address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={loading}
-                  className="w-full pl-11 pr-4 py-3.5 rounded-2xl border border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-white/5 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 text-sm font-semibold transition-all disabled:opacity-50"
-                />
+
+                {forgotSuccess ? (
+                  <div className="bg-emerald-500/10 border border-emerald-500/20 dark:border-emerald-500/10 rounded-2xl p-4 flex items-start gap-3 transition-all animate-in fade-in zoom-in-95">
+                    <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="text-xs font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Reset Email Sent</h4>
+                      <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-normal mt-1 font-semibold">
+                        Please check your inbox. If the email exists, you'll receive a password reset link shortly.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <form onSubmit={handleForgotPassword} className="space-y-4">
+                    <div className="relative">
+                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+                        <Mail className="h-4.5 w-4.5" />
+                      </div>
+                      <input
+                        type="email"
+                        placeholder="Email Address"
+                        value={forgotEmail}
+                        onChange={(e) => setForgotEmail(e.target.value)}
+                        disabled={forgotLoading}
+                        className="w-full pl-11 pr-4 py-3.5 rounded-2xl border border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-white/5 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 text-sm font-semibold transition-all disabled:opacity-50"
+                        required
+                      />
+                    </div>
+
+                    {forgotError && <p className="text-xs text-red-500 font-semibold px-1">{forgotError}</p>}
+
+                    <button
+                      type="submit"
+                      disabled={forgotLoading}
+                      className="w-full bg-[#248a54] hover:bg-[#34a86d] text-white font-black py-4 rounded-2xl transition-all duration-300 text-sm shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 group active:scale-[0.98] mt-2 cursor-pointer disabled:opacity-75"
+                    >
+                      <span>{forgotLoading ? "Sending Link..." : "Send Reset Link"}</span>
+                      {!forgotLoading && <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />}
+                    </button>
+                  </form>
+                )}
+
+                <div className="mt-6 text-center">
+                  <button
+                    onClick={() => {
+                      setShowForgotPassword(false);
+                      setForgotSuccess(false);
+                      setForgotError("");
+                      setForgotEmail("");
+                    }}
+                    className="text-xs font-bold text-[#248a54] dark:text-[#34a86d] hover:underline"
+                  >
+                    Back to Sign In
+                  </button>
+                </div>
               </div>
-
-              {isSignUp && (
-                <div className="relative">
-                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
-                    <User className="h-4.5 w-4.5" />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Full Name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    disabled={loading}
-                    className="w-full pl-11 pr-4 py-3.5 rounded-2xl border border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-white/5 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 text-sm font-semibold transition-all disabled:opacity-50"
-                  />
+            ) : showEmailConfirmSent ? (
+              <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500 text-center">
+                <div className="mx-auto h-16 w-16 bg-indigo-500/10 dark:bg-indigo-500/25 rounded-full flex items-center justify-center text-indigo-500 shadow-inner">
+                  <Mail className="h-10 w-10 animate-bounce" />
                 </div>
-              )}
-              
-              {isSignUp && !hasInvite && (
-                <div className="relative">
-                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
-                    <Sparkles className="h-4.5 w-4.5" />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Workspace Name"
-                    value={workspaceName}
-                    onChange={(e) => setWorkspaceName(e.target.value)}
-                    disabled={loading}
-                    className="w-full pl-11 pr-4 py-3.5 rounded-2xl border border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-white/5 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 text-sm font-semibold transition-all disabled:opacity-50"
-                  />
+                <div>
+                  <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-2">
+                    Verify Your Email
+                  </h1>
+                  <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-semibold leading-relaxed">
+                    We've sent a verification link to <strong className="text-slate-700 dark:text-slate-200">{email}</strong>.
+                  </p>
                 </div>
-              )}
 
-              {isSignUp && hasInvite && pendingInvite && (
-                <div className="bg-emerald-500/10 border border-emerald-500/20 dark:border-emerald-500/10 rounded-2xl p-4 flex items-start gap-3 transition-all animate-in fade-in slide-in-from-top-2 duration-300">
-                  <Sparkles className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
-                  <div className="text-left">
-                    <h4 className="text-xs font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Workspace Invitation Detected</h4>
-                    <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-normal mt-1">
-                      You'll join <strong className="font-bold">{pendingInvite.workspaces?.name}</strong> as <strong className="font-bold">{pendingInvite.role}</strong> upon completing registration.
-                    </p>
+                <div className="bg-amber-500/10 border border-amber-500/20 dark:border-amber-500/10 rounded-2xl p-4 flex items-start gap-3">
+                  <ShieldCheck className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                  <div className="text-left text-[11px] text-slate-600 dark:text-slate-300 leading-normal font-semibold">
+                    Please click the link in your email to confirm your account and automatically initialize your TeamDock workspace.
                   </div>
                 </div>
-              )}
 
-              <div className="relative">
-                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
-                  <Lock className="h-4.5 w-4.5" />
-                </div>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={loading}
-                  className="w-full pl-11 pr-10 py-3.5 rounded-2xl border border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-white/5 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 text-sm font-semibold transition-all disabled:opacity-50"
-                />
                 <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  disabled={loading}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                  onClick={() => {
+                    setShowEmailConfirmSent(false);
+                    setIsSignUp(false);
+                  }}
+                  className="w-full bg-[#248a54] hover:bg-[#34a86d] text-white font-black py-4 rounded-2xl transition-all duration-300 text-sm shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
                 >
-                  {showPassword ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
+                  Return to Sign In
                 </button>
               </div>
+            ) : (
+              <>
+                <div className="mb-8">
+                  <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight mb-2">
+                    {isSignUp ? "Create Workspace" : "Welcome Back"}
+                  </h1>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    {isSignUp 
+                      ? "Build your collaborative playground in seconds." 
+                      : "Collaborate instantly on projects and milestones."}
+                  </p>
+                </div>
 
-              {error && <p className="text-xs text-red-500 font-semibold px-1">{error}</p>}
+                <form onSubmit={handleAuth} className="space-y-4">
+                  <div className="relative">
+                    <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+                      <Mail className="h-4.5 w-4.5" />
+                    </div>
+                    <input
+                      type="email"
+                      placeholder="Email Address"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      disabled={loading}
+                      className="w-full pl-11 pr-4 py-3.5 rounded-2xl border border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-white/5 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 text-sm font-semibold transition-all disabled:opacity-50"
+                    />
+                  </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-[#248a54] hover:bg-[#34a86d] text-white font-black py-4 rounded-2xl transition-all duration-300 text-sm shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 group active:scale-[0.98] mt-2 cursor-pointer disabled:opacity-75"
-              >
-                <span>{loading ? "Authenticating..." : isSignUp ? (hasInvite ? "Join Workspace" : "Build Workspace") : "Access Workspace"}</span>
-                {!loading && <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />}
-              </button>
-            </form>
+                  {isSignUp && (
+                    <div className="relative">
+                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+                        <User className="h-4.5 w-4.5" />
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Full Name"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        disabled={loading}
+                        className="w-full pl-11 pr-4 py-3.5 rounded-2xl border border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-white/5 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 text-sm font-semibold transition-all disabled:opacity-50"
+                      />
+                    </div>
+                  )}
+                  
+                  {isSignUp && !hasInvite && (
+                    <div className="relative">
+                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+                        <Sparkles className="h-4.5 w-4.5" />
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Workspace Name"
+                        value={workspaceName}
+                        onChange={(e) => setWorkspaceName(e.target.value)}
+                        disabled={loading}
+                        className="w-full pl-11 pr-4 py-3.5 rounded-2xl border border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-white/5 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 text-sm font-semibold transition-all disabled:opacity-50"
+                      />
+                    </div>
+                  )}
+
+                  {isSignUp && hasInvite && pendingInvite && (
+                    <div className="bg-emerald-500/10 border border-emerald-500/20 dark:border-emerald-500/10 rounded-2xl p-4 flex items-start gap-3 transition-all animate-in fade-in slide-in-from-top-2 duration-300">
+                      <Sparkles className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
+                      <div className="text-left">
+                        <h4 className="text-xs font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Workspace Invitation Detected</h4>
+                        <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-normal mt-1">
+                          You'll join <strong className="font-bold">{pendingInvite.workspaces?.name}</strong> as <strong className="font-bold">{pendingInvite.role}</strong> upon completing registration.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="relative">
+                    <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+                      <Lock className="h-4.5 w-4.5" />
+                    </div>
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      disabled={loading}
+                      className="w-full pl-11 pr-10 py-3.5 rounded-2xl border border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-white/5 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 text-sm font-semibold transition-all disabled:opacity-50"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      disabled={loading}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
+                    </button>
+                  </div>
+
+                  {!isSignUp && (
+                    <div className="text-right">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowForgotPassword(true);
+                          setError("");
+                        }}
+                        className="text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                      >
+                        Forgot Password?
+                      </button>
+                    </div>
+                  )}
+
+                  {error && <p className="text-xs text-red-500 font-semibold px-1">{error}</p>}
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-[#248a54] hover:bg-[#34a86d] text-white font-black py-4 rounded-2xl transition-all duration-300 text-sm shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 group active:scale-[0.98] mt-2 cursor-pointer disabled:opacity-75"
+                  >
+                    <span>{loading ? "Authenticating..." : isSignUp ? (hasInvite ? "Join Workspace" : "Build Workspace") : "Access Workspace"}</span>
+                    {!loading && <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />}
+                  </button>
+                </form>
+              </>
+            )}
           </div>
 
           {/* Toggle Footer */}
-          <div className="mt-8 text-center text-sm text-slate-500 dark:text-slate-400">
-            {isSignUp ? "Have an account already? " : "New to TeamDock? "}
-            <button 
-              onClick={() => { setIsSignUp(!isSignUp); setError(""); }}
-              disabled={loading}
-              className="text-[#248a54] dark:text-[#34a86d] hover:underline font-bold disabled:opacity-50"
-            >
-              {isSignUp ? "Sign In" : "Sign up free"}
-            </button>
-          </div>
+          {!showForgotPassword && !showEmailConfirmSent && (
+            <div className="mt-8 text-center text-sm text-slate-500 dark:text-slate-400">
+              {isSignUp ? "Have an account already? " : "New to TeamDock? "}
+              <button 
+                onClick={() => { 
+                  const nextVal = !isSignUp;
+                  setIsSignUp(nextVal); 
+                  setError(""); 
+                  router.push(nextVal ? "/signup" : "/login");
+                }}
+                disabled={loading}
+                className="text-[#248a54] dark:text-[#34a86d] hover:underline font-bold disabled:opacity-50 cursor-pointer"
+              >
+                {isSignUp ? "Sign In" : "Sign up free"}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Right Side: Mockup OS Promotion */}

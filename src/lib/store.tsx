@@ -126,6 +126,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   // Initialize Auth and Sync Data
   useEffect(() => {
+    let authSubscription: any = null;
+
     const init = async () => {
       try {
         setLoading(true);
@@ -259,7 +261,36 @@ export function StoreProvider({ children }: { children: ReactNode }) {
               setSessions([fallbackMember]);
             }
           } else {
-            // No workspace — build a user object from profile so dashboard renders
+            // No workspace — check if there is a pending workspace/invite in metadata (email verification signup flow)
+            const pendingWsName = user.user_metadata?.pending_workspace_name;
+            const pendingInviteId = user.user_metadata?.pending_invite_id;
+            
+            if (pendingWsName && pendingWsName.trim()) {
+              try {
+                await workspaceService.createWorkspace(pendingWsName.trim(), user.id);
+                // Hard refresh to fetch everything cleanly on reload
+                window.location.reload();
+                return;
+              } catch (we) {
+                console.error('Error creating pending workspace on init:', we);
+              }
+            } else if (pendingInviteId && user.email) {
+              try {
+                const invite = await invitationService.getPendingInvite(user.email);
+                if (invite) {
+                  const displayName = profile?.full_name || user.user_metadata?.full_name || 'User';
+                  const initials = displayName.split(" ").map((n: string) => n[0]).join("").substring(0, 2).toUpperCase();
+                  await invitationService.acceptInvite(invite.id, invite.workspace_id, user.id, invite.role);
+                  // Hard refresh to fetch everything cleanly on reload
+                  window.location.reload();
+                  return;
+                }
+              } catch (ie) {
+                console.error('Error accepting pending invite on init:', ie);
+              }
+            }
+
+            // Fallback user object from profile so dashboard renders
             const fallbackName = profile?.full_name || user.email || 'User';
             const fallbackEmail = profile?.email || user.email || '';
             const initials = fallbackName.split(' ').map((n: string) => (n?.[0] || '')).join('').toUpperCase();
@@ -275,6 +306,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             setCurrentUser(fallbackMember);
             setSessions([fallbackMember]);
           }
+        } else {
+          setCurrentUser(null);
+          setSessions([]);
         }
 
         // Theme
@@ -289,7 +323,30 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setMounted(true);
       }
     };
+
     init();
+
+    // Listen for auth state changes (crucial for email confirmation redirect flow)
+    const { data: { subscription } } = authService.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+        init();
+      } else if (event === 'SIGNED_OUT') {
+        setCurrentUser(null);
+        setSessions([]);
+        setWorkspaces([]);
+        setAllTasks([]);
+        setAllProjects([]);
+        setAllMembers([]);
+      }
+    });
+
+    authSubscription = subscription;
+
+    return () => {
+      if (authSubscription) {
+        authSubscription.unsubscribe();
+      }
+    };
   }, []);
 
 

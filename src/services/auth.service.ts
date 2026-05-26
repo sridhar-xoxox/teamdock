@@ -3,12 +3,17 @@ import { createClient } from '@/lib/supabase/client';
 const supabase = createClient();
 
 export const authService = {
-  async signUp(email: string, password: string, fullName: string) {
+  async signUp(email: string, password: string, fullName: string, optionsData?: { pendingWorkspaceName?: string; pendingInviteId?: string }) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { full_name: fullName },
+        emailRedirectTo: typeof window !== "undefined" ? `${window.location.origin}/login` : undefined,
+        data: { 
+          full_name: fullName,
+          pending_workspace_name: optionsData?.pendingWorkspaceName,
+          pending_invite_id: optionsData?.pendingInviteId
+        },
       },
     });
     if (error) throw error;
@@ -66,5 +71,23 @@ export const authService = {
     }, { onConflict: 'id' }).select().maybeSingle();
     if (error) throw error;
     return data as any;
+  },
+
+  async resetPassword(email: string) {
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) throw error;
+    return data;
+  },
+
+  async updatePassword(password: string) {
+    const { data, error } = await supabase.auth.updateUser({ password });
+    if (error) throw error;
+    return data;
+  },
+  
+  onAuthStateChange(callback: (event: any, session: any) => void) {
+    return supabase.auth.onAuthStateChange(callback);
   }
 };
