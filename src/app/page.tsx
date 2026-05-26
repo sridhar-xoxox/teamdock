@@ -27,7 +27,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3 group">
             <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/25 group-hover:scale-105 transition-transform duration-300">
-              <Logo className="h-5.5 w-5.5 text-white" />
+              <Logo className="h-5 w-5 text-white" />
             </div>
             <span className="text-xl font-black tracking-tight bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
               teamdock
@@ -87,7 +87,7 @@ export default function LandingPage() {
 
         {/* 3D Perspective Dashboard Graphic Mockup */}
         <div className="mt-16 max-w-5xl mx-auto px-4 [perspective:1200px]">
-          <div className="relative w-full rounded-[2rem] border border-slate-200/50 dark:border-white/5 bg-white/40 dark:bg-[#1e2330]/40 backdrop-blur-xl p-3 sm:p-5 shadow-2xl transition-all duration-700 ease-out [transform:rotateX(10deg)_rotateY(-6deg)_rotateZ(1deg)] hover:[transform:none] group">
+          <div className="relative w-full rounded-[2rem] border border-slate-200/50 dark:border-white/5 bg-white/40 dark:bg-[#1e2330]/40 backdrop-blur-xl p-3 sm:p-5 shadow-2xl transition-all duration-700 ease-out md:[transform:rotateX(10deg)_rotateY(-6deg)_rotateZ(1deg)] md:hover:[transform:none] group">
             {/* Glossy overlay effect */}
             <div className="absolute inset-0 bg-gradient-to-tr from-emerald-500/10 via-transparent to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none rounded-[2rem]" />
             
@@ -261,7 +261,7 @@ export default function LandingPage() {
       <footer className="border-t border-slate-200/50 dark:border-white/5 py-3.5 bg-slate-50 dark:bg-[#1a1f2e]/45">
         <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-center text-[11px] font-bold text-slate-400 dark:text-slate-500">
           <div className="flex items-center gap-2">
-            <Logo className="h-4.5 w-4.5 text-slate-400" />
+            <Logo className="h-5 w-5 text-slate-400" />
             <span className="font-black text-slate-500 dark:text-slate-400 uppercase tracking-tight">teamdock</span>
           </div>
           <div>
