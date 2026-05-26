@@ -91,7 +91,7 @@ export default function LandingPage() {
             {/* Glossy overlay effect */}
             <div className="absolute inset-0 bg-gradient-to-tr from-emerald-500/10 via-transparent to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none rounded-[2rem]" />
             
-            <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-white/5 shadow-lg bg-[#0f121d] relative aspect-[1.7]">
+            <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-white/5 shadow-lg bg-[#0f121d] relative h-64 sm:h-auto sm:aspect-[1.7]">
               {/* Fake Window header bar */}
               <div className="h-8 bg-slate-950 flex items-center px-4 justify-between border-b border-slate-800">
                 <div className="flex items-center gap-1.5">
@@ -106,10 +106,10 @@ export default function LandingPage() {
               </div>
 
               {/* Simulated UI Content */}
-              <div className="p-4 h-full bg-[#0f121d] text-left flex flex-col justify-between select-none">
+              <div className="p-4 h-[calc(100%-2rem)] bg-[#0f121d] text-left flex flex-col justify-between select-none">
                 <div className="grid grid-cols-12 gap-4 h-[85%]">
                   {/* Sidebar UI Mock */}
-                  <div className="col-span-3 border-r border-white/5 pr-3 space-y-4">
+                  <div className="hidden md:block col-span-3 border-r border-white/5 pr-3 space-y-4">
                     <div className="h-8 bg-white/5 rounded-lg flex items-center px-2.5 gap-2">
                       <div className="w-4 h-4 rounded bg-emerald-500 apple-bubble"></div>
                       <div className="h-2 w-14 bg-white/20 rounded"></div>
@@ -122,7 +122,7 @@ export default function LandingPage() {
                   </div>
 
                   {/* Main Sprint Board UI Mock */}
-                  <div className="col-span-9 space-y-4">
+                  <div className="col-span-12 md:col-span-9 space-y-4">
                     <div className="flex justify-between items-center pb-2 border-b border-white/5">
                       <div className="h-4 w-28 bg-white/20 rounded"></div>
                       <div className="flex gap-1">
@@ -131,7 +131,7 @@ export default function LandingPage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       {/* Column 1 */}
                       <div className="bg-white/5 p-3 rounded-xl border border-white/5 space-y-2.5">
                         <div className="flex justify-between items-center">
@@ -148,7 +148,7 @@ export default function LandingPage() {
                       </div>
 
                       {/* Column 2 */}
-                      <div className="bg-white/5 p-3 rounded-xl border border-white/5 space-y-2.5">
+                      <div className="hidden sm:block bg-white/5 p-3 rounded-xl border border-white/5 space-y-2.5">
                         <div className="flex justify-between items-center">
                           <span className="text-[9px] font-bold text-amber-400 uppercase tracking-wider">In Progress</span>
                           <span className="text-[9px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded-full">1</span>
@@ -163,7 +163,7 @@ export default function LandingPage() {
                       </div>
 
                       {/* Column 3 */}
-                      <div className="bg-white/5 p-3 rounded-xl border border-white/5 space-y-2.5">
+                      <div className="hidden sm:block bg-white/5 p-3 rounded-xl border border-white/5 space-y-2.5">
                         <div className="flex justify-between items-center">
                           <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider">Done</span>
                           <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full">8</span>
@@ -259,7 +259,7 @@ export default function LandingPage() {
 
       {/* Minimal Footer */}
       <footer className="border-t border-slate-200/50 dark:border-white/5 py-3.5 bg-slate-50 dark:bg-[#1a1f2e]/45">
-        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between text-[11px] font-bold text-slate-400 dark:text-slate-500">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-center text-[11px] font-bold text-slate-400 dark:text-slate-500">
           <div className="flex items-center gap-2">
             <Logo className="h-4.5 w-4.5 text-slate-400" />
             <span className="font-black text-slate-500 dark:text-slate-400 uppercase tracking-tight">teamdock</span>
